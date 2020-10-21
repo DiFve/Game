@@ -9,10 +9,10 @@
 #include"Player.h"
 #include"Platform.h"
 using namespace std;
+void showHighScore(int x,int y,string word, sf::RenderWindow& window);
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode(1080, 720), "Game Test!", sf::Style::Close | sf::Style::Resize);
-	sf::Font MyFont;
 	sf::Texture RightSide;
 	sf::Texture BG1;
 	vector <pair<int, string>> userScore;
@@ -54,7 +54,7 @@ int main()
 	BackGround.setTexture(&BG1);
 	if (!RightSide.loadFromFile("res/img/player.png")) 
 	{
-		std::cout << "Load failed" << std::endl;
+		cout << "Load failed" << endl;
 	}
 	Player player(&RightSide, sf::Vector2u(4,4),0.3f,85.0f);
 
@@ -108,6 +108,18 @@ int main()
 		
 		window.clear();
 		window.draw(BackGround);
+		showHighScore(10, 10,"HIGHSCORE", window);
+		showHighScore(10, 40, userScore[5].second, window);
+		showHighScore(10, 70, userScore[4].second, window);
+		showHighScore(10, 100, userScore[3].second, window);
+		showHighScore(10, 130, userScore[2].second, window);
+		showHighScore(10, 160, userScore[1].second, window);
+		showHighScore(100, 40, to_string(userScore[5].first), window);
+		showHighScore(100, 70, to_string(userScore[4].first), window);
+		showHighScore(100, 100, to_string(userScore[3].first), window);
+		showHighScore(100, 130, to_string(userScore[2].first), window);
+		showHighScore(100, 160, to_string(userScore[1].first), window);
+		
 		/*platform1.Draw(window);
 		platform2.Draw(window);
 		platform3.Draw(window);
@@ -126,4 +138,15 @@ int main()
 	}
 	
 	return 0;
+}
+void showHighScore(int x,int y,string word, sf::RenderWindow& window)
+{
+	sf::Font font;
+	font.loadFromFile("Sound Bubble DEMO.otf");
+	sf::Text text;
+	text.setFont(font);
+	text.setPosition(x, y);
+	text.setString(word);
+	text.setCharacterSize(32);
+	window.draw(text);
 }

@@ -41,7 +41,6 @@ void Player::Update(float deltaTime)
 		movement.y += speed * deltaTime;
 	}
 		
-	//std::cout << "x = " << body.getPosition().x <<" "<< "y = " << body.getPosition().y << "\n";
 	if (movement.x == 0.0f && movement.y==0.0f)
 	{
 		check = 0;
@@ -51,7 +50,7 @@ void Player::Update(float deltaTime)
 		check = 1;
 
 	}
-	
+	//std::cout<<body.getPosition().x;
 	animation.Update(row,deltaTime,check);
 	body.setTextureRect(animation.uvRect);
 	body.move(movement);

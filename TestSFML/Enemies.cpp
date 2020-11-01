@@ -1,8 +1,9 @@
 #include "Enemies.h"
 
-Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y) :
+Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp) :
 	animation(texture, imageCount, switchTime)
 {
+	this->hp = hp;
 	this->speed = speed;
 	check = 0;
 	row = 0;
@@ -47,6 +48,11 @@ void Enemies::Draw(sf::RenderWindow& window)
 {
 
 	window.draw(body);
+}
+
+void Enemies::setHp(int hp)
+{
+	this->hp = hp;
 }
 
 

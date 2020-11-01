@@ -6,26 +6,34 @@
 #include<algorithm>
 #include<utility>
 #include<vector>
-#include"Player.h" 
 #include<Windows.h>
+#include"Player.h" 
 #include"Platform.h"
 #include"Enemies.h"
+#include"Bullet.h"
 using namespace std;
-void showHighScore(int x,int y,string word, sf::RenderWindow& window);
+void showHighScore(int x,int y,string word, sf::RenderWindow& window, sf::Font* font);
 void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture);
 void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY);
 void drawEnemy(vector<Enemies>& enemy, sf::RenderWindow& window);
-void enemyCollider(vector<Enemies>& enemy, Platform& platform1, Platform& platform2, Platform& platform3, Platform& platform4, Platform& platform5, Platform& platform6, Platform& platform7, Platform& platform8, Platform& platform9, Platform& platform10, Platform& platform11, Platform& platform12);
-sf::Font font;
+void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy);
+void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall);
+void createBullet(vector<Bullet>& bullet, float playerPosX, float playerPosY, int direction, sf::Texture* bulletTexture);
+void updateBullet(vector<Bullet>& vect, float deltaTime);
+void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
+
 int main()
 {
 	srand(time(NULL));
+	sf::Font font;
 	sf::Clock enemySpawnClock;
+	sf::Clock bulletClock;
 	vector <Enemies> enemies1;
 	sf::RenderWindow window(sf::VideoMode(1080, 720), "Game Test!", sf::Style::Close | sf::Style::Resize);
 	sf::Texture RightSide;
 	sf::Texture Enemies1Texture;
 	sf::Texture BG1;
+	sf::Texture bulletTexture;
 
 
 	//------------HIGHSCORE------------------
@@ -57,8 +65,10 @@ int main()
 	{
 		strcpy(temp,userScore[i].second.c_str());
 		fprintf(fp, "%s %d\n",temp, userScore[i].first);
+		//cout << userScore[i].second << " " << userScore[i].first << "\n";
 	}
 	fclose(fp);
+	
 	//------------HIGHSCORE------------------
 
 	BG1.loadFromFile("res/img/BG1.png");
@@ -70,36 +80,40 @@ int main()
 	{
 		cout << "Load failed" << endl;
 	}
+
 	Player player(&RightSide, sf::Vector2u(4,4),0.3f,85.0f);   
 	
 	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
-	Platform platform1(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 38.0f));
-	Platform platform2(nullptr, sf::Vector2f(5.0f, 640.0f), sf::Vector2f(218.0f, 360.0f));
-	Platform platform3(nullptr, sf::Vector2f(5.0f, 640.0f), sf::Vector2f(862.0f, 360.0f));
-	Platform platform4(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 683.0f));
-	Platform platform5(nullptr, sf::Vector2f(280.0f, 40.0f), sf::Vector2f(360.0f, 661.0f));
-	Platform platform6(nullptr, sf::Vector2f(280.0f, 40.0f), sf::Vector2f(360.0f, 60.0f));
-	Platform platform7(nullptr, sf::Vector2f(240.0f, 40.0f), sf::Vector2f(740.0f, 60.0f));
-	Platform platform8(nullptr, sf::Vector2f(240.0f, 40.0f), sf::Vector2f(740.0f, 661.0f));
-	Platform platform9(nullptr, sf::Vector2f(40.0f, 280.0f), sf::Vector2f(240.0f, 180.0f));
-	Platform platform10(nullptr, sf::Vector2f(40.0f, 280.0f), sf::Vector2f(840.0f, 180.0f));
-	Platform platform11(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(240.0f, 560.0f));
-	Platform platform12(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(840.0f, 560.0f));
+	vector <Bullet> bullet;
+	bulletTexture.loadFromFile("res/img/bullet.png");
+	vector <Platform> wall;
+	wall.push_back(Platform(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 38.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(5.0f, 640.0f), sf::Vector2f(218.0f, 360.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(5.0f, 640.0f), sf::Vector2f(862.0f, 360.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 683.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(280.0f, 40.0f), sf::Vector2f(360.0f, 661.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(280.0f, 40.0f), sf::Vector2f(360.0f, 60.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(240.0f, 40.0f), sf::Vector2f(740.0f, 60.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(240.0f, 40.0f), sf::Vector2f(740.0f, 661.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 280.0f), sf::Vector2f(240.0f, 180.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 280.0f), sf::Vector2f(840.0f, 180.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(240.0f, 560.0f)));
+	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(840.0f, 560.0f)));
 	float deltaTime = 0.0f;
 	sf::Clock clock;
 	sf::Clock clockenemyMove;
-
 	while (window.isOpen())
 	{
+		
 		int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
 		float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
+		float bulletDelay = bulletClock.getElapsedTime().asMilliseconds();
 		int randEnemy = rand();
 		if (enemySpawnTime>2500)
 		{
 			createEnemy(enemies1,randEnemy,&Enemies1Texture);
 			enemySpawnClock.restart();
 		}
-		
 		deltaTime = clock.restart().asSeconds();
 		sf::Event evnt;
 		/*if (deltaTime > 1.0f / 150.0f)
@@ -118,59 +132,76 @@ int main()
 			}
 		}
 		
+		if (bulletDelay>450)
+		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)&& sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y,0,&bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+			}
+			bulletClock.restart();
+		}
+
 		player.Update(deltaTime);
-		cout << player.Getposition().x << " "<<player.Getposition().y << "\n";
+		updateBullet(bullet,deltaTime);
+		//cout << player.Getposition().x << " "<<player.Getposition().y << "\n";
 		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y);
 		Collider playerCollison = player.GetCollider();
 		
-		platform1.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform2.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform3.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform4.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform5.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform6.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform7.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform8.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform9.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform10.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform11.GetCollider().CheckCollider(playerCollison, 1.0f);
-		platform12.GetCollider().CheckCollider(playerCollison, 1.0f);
+		for (int i=0;i<wall.size();i++)
+		{
+			wall[i].GetCollider().CheckCollider(playerCollison);
+		}
 
-		
-		enemyCollider(enemies1, platform1, platform2, platform3, platform4, platform5, platform6, platform7, platform8, platform9, platform10, platform11, platform12);
-
+		enemyCollider(enemies1,wall);
+		bulletCollider(bullet,wall,enemies1);
 
 		window.clear();
 		window.draw(BackGround);
-		//cout << nub;
 		//---------------SHOWHIGHSCORE-------------
 		
-		showHighScore(10, 10,"HIGHSCORE", window);
-		showHighScore(10, 40, userScore[5].second, window);
-		showHighScore(10, 70, userScore[4].second, window);
-		showHighScore(10, 100, userScore[3].second, window);
-		showHighScore(10, 130, userScore[2].second, window);
-		showHighScore(10, 160, userScore[1].second, window);
-		showHighScore(100, 40, to_string(userScore[5].first), window);
-		showHighScore(100, 70, to_string(userScore[4].first), window);
-		showHighScore(100, 100, to_string(userScore[3].first), window);
-		showHighScore(100, 130, to_string(userScore[2].first), window);
-		showHighScore(100, 160, to_string(userScore[1].first), window);
+		showHighScore(10, 10,"HIGHSCORE", window,&font);
+		showHighScore(10, 40, userScore[5].second, window, &font);
+		showHighScore(10, 70, userScore[4].second, window, &font);
+		showHighScore(10, 100, userScore[3].second, window, &font);
+		showHighScore(10, 130, userScore[2].second, window, &font);
+		showHighScore(10, 160, userScore[1].second, window, &font);
+		showHighScore(100, 40, to_string(userScore[5].first), window, &font);
+		showHighScore(100, 70, to_string(userScore[4].first), window, &font);
+		showHighScore(100, 100, to_string(userScore[3].first), window, &font);
+		showHighScore(100, 130, to_string(userScore[2].first), window, &font);
+		showHighScore(100, 160, to_string(userScore[1].first), window,&font);
 		
 		//---------------SHOWHIGHSCORE-------------
 		
-		/*platform1.Draw(window);
-		platform2.Draw(window);
-		platform3.Draw(window);
-		platform4.Draw(window);
-		platform5.Draw(window);
-		platform6.Draw(window);
-		platform7.Draw(window);
-		platform8.Draw(window);
-		platform9.Draw(window);
-		platform10.Draw(window);
-		platform11.Draw(window);
-		platform12.Draw(window);*/
+		drawBullet(bullet,window);
 		drawEnemy(enemies1,window);
 		player.Draw(window);
 		window.display();
@@ -179,23 +210,15 @@ int main()
 	
 	return 0;
 }
-void enemyCollider(vector<Enemies> &enemy, Platform &platform1, Platform& platform2, Platform& platform3, Platform& platform4, Platform& platform5, Platform& platform6, Platform& platform7, Platform& platform8, Platform& platform9, Platform& platform10, Platform& platform11, Platform& platform12)
+void enemyCollider(vector<Enemies> &enemy,vector<Platform> &wall)
 {
 	for (Enemies& enemy : enemy)
 	{
 		Collider enemy1Collision = enemy.GetCollider();
-		platform1.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform2.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform3.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform4.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform5.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform6.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform7.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform8.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform9.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform10.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform11.GetCollider().CheckCollider(enemy1Collision, 1.0f);
-		platform12.GetCollider().CheckCollider(enemy1Collision, 1.0f);
+		for (Platform& wall : wall)
+		{
+			wall.GetCollider().CheckCollider(enemy1Collision);
+		}
 	}
 	
 }
@@ -206,73 +229,77 @@ void createEnemy(vector<Enemies> &enemy,int randSpawn,sf::Texture *Enemies1Textu
 	{
 		case(0):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2,2));
 			break;
 		}
 		case(1):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458, 2));
 			break;
 		}
 		case(2):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5, 2));
 			break;
 		}
 		case(3):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58, 2));
 			break;
 		}
 		case(4):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58, 2));
 			break;
 		}
 		case(5):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58, 2));
 			break;
 		}
 		case(6):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5, 2));
 			break;
 		}
 		case(7):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147, 2));
 			break;
 		}
 		case(8):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5, 2));
 			break;
 		}
 		case(9):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663, 1));
 			break;
 		}
 		case(10):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663, 1));
 			break;
 		}
 		case(11):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663, 1));
 			break;
 		}
 	}
 	
 
 }
-void updateEnemy(vector<Enemies>& enemy,float deltaTime, float playerPosX, float playerPosY)
+void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float playerPosY)
 {
-	for (Enemies& enemy1 : enemy)
+	for (int i=0;i<vect.size();i++)
 	{
-		enemy1.Update(deltaTime,playerPosX,playerPosY);
+		vect[i].Update(deltaTime,playerPosX,playerPosY);
+		if (vect[i].getHp()==0)
+		{
+			vect.erase(vect.begin()+i);
+		}
 	}
 }
 void drawEnemy(vector<Enemies>& enemy,sf::RenderWindow& window)
@@ -282,12 +309,105 @@ void drawEnemy(vector<Enemies>& enemy,sf::RenderWindow& window)
 		enemy1.Draw(window);
 	}
 }
-void showHighScore(int x,int y,string word, sf::RenderWindow& window)
+void showHighScore(int x,int y,string word, sf::RenderWindow& window,sf::Font* font)
 {
 	sf::Text text;
-	text.setFont(font);
+	text.setFont(*font);
 	text.setPosition(x, y);
 	text.setString(word);
 	text.setCharacterSize(32);
 	window.draw(text);
+}
+void createBullet(vector<Bullet>& bullet,float playerPosX, float playerPosY, int direction,sf::Texture *bulletTexture)
+{
+	switch (direction)
+	{
+		case(0):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4),0.3f,200.0f,0,playerPosX,playerPosY));
+			break;
+		}
+		case(1):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 1,playerPosX, playerPosY));
+			break;
+		}
+		case(2):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 2,playerPosX, playerPosY));
+			break;
+		}
+		case(3):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 3,playerPosX, playerPosY));
+			break;
+		}
+		case(4):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 4, playerPosX, playerPosY));
+			break;
+		}
+		case(5):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 5, playerPosX, playerPosY));
+			break;
+		}
+		case(6):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 6, playerPosX, playerPosY));
+			break;
+		}
+		case(7):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 7, playerPosX, playerPosY));
+			break;
+		}
+	}
+}
+void updateBullet(vector<Bullet>& vect,float deltaTime)
+{
+	for (Bullet& bullet : vect)
+	{
+		bullet.Update(deltaTime);
+	}
+}
+void drawBullet(vector<Bullet>& vect,sf::RenderWindow& window)
+{
+	for (Bullet& bullet : vect)
+	{
+		bullet.Draw(window);
+	}
+}
+void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>& enemy)
+{
+	for (Bullet& bullet : vect)
+	{
+		Collider bulletCollision = bullet.GetCollider();
+		for (Platform& wall : wall)
+		{
+			if (wall.GetCollider().CheckCollider(bulletCollision))
+			{
+				bullet.bulletCheck(true);
+			}
+		}
+	
+		for (Enemies& enemy : enemy)
+		{
+			cout << enemy.getHp() << endl;
+			if (enemy.GetCollider().CheckCollider(bulletCollision))
+			{
+				bullet.bulletCheck(true);
+				enemy.setHp(enemy.getHp()-1);
+				
+			}
+		}
+		for (int i = 0; i < vect.size(); i++)
+		{
+			if (bullet.isDestroy())
+			{
+				vect.erase(vect.begin()+i);
+			}
+		}
+	}
+	
 }

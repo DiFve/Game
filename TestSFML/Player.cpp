@@ -40,6 +40,23 @@ void Player::Update(float deltaTime)
 		row = 2;
 		movement.y += speed * deltaTime;
 	}
+
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+	{
+		row = 1;
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+	{
+		row = 0;
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+	{
+		row = 3;
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+	{
+		row = 2;
+	}
 		
 	if (movement.x == 0.0f && movement.y==0.0f)
 	{

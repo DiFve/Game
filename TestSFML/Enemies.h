@@ -11,6 +11,10 @@ public:
 	void Update(float deltaTime, float playerX, float playerY);
 	void Draw(sf::RenderWindow& window);
 	void setHp(int hp);
+	void dieAnimation(sf::Texture* texture, bool isAlive);
+	float GetPositionX() { return body.getPosition().x; }
+	float GetPositionY() { return body.getPosition().y; }
+	bool dieComplete();
 	int getHp() { return hp; }
 	Collider GetCollider() { return Collider(body); }
 	~Enemies();
@@ -20,6 +24,8 @@ private:
 	unsigned int check=1;
 	unsigned int row;
 	float speed;
-	int hp;
+	bool isAlive = true;
+	int hp,prevhp;
+	int dieFrame = 100,shotFrame=60;
 };
 

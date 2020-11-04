@@ -2,7 +2,7 @@
 
 Collider::Collider(sf::RectangleShape& body) :
     body(body)
-{
+{ 
 }
 
 Collider::~Collider()

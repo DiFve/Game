@@ -9,18 +9,21 @@
 #include<Windows.h>
 #include"Player.h" 
 #include"Platform.h"
+#include"Item.h"
 #include"Enemies.h"
 #include"Bullet.h"
 using namespace std;
 void showHighScore(int x,int y,string word, sf::RenderWindow& window, sf::Font* font);
 void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture);
-void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY);
+void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item);
 void drawEnemy(vector<Enemies>& enemy, sf::RenderWindow& window);
 void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy);
 void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall);
 void createBullet(vector<Bullet>& bullet, float playerPosX, float playerPosY, int direction, sf::Texture* bulletTexture);
 void updateBullet(vector<Bullet>& vect, float deltaTime);
 void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
+void drawItem(vector<Item>& vect, sf::RenderWindow& window);
+void updateItem(vector<Item>& item, float deltaTime);
 
 int main()
 {
@@ -34,8 +37,8 @@ int main()
 	sf::Texture Enemies1Texture;
 	sf::Texture BG1;
 	sf::Texture bulletTexture;
-
-
+	sf::Texture enemyDieAnimation;
+	sf::Texture ItemTexture;
 	//------------HIGHSCORE------------------
 	font.loadFromFile("Blockbusted.ttf");
 	string nameTest="dd";
@@ -70,7 +73,7 @@ int main()
 	fclose(fp);
 	
 	//------------HIGHSCORE------------------
-
+	ItemTexture.loadFromFile("res/img/Item.png");
 	BG1.loadFromFile("res/img/BG1.png");
 	sf::RectangleShape BackGround(sf::Vector2f(640.0f, 640.0f));
 	BackGround.setOrigin(320.0f,320.0f);
@@ -82,9 +85,10 @@ int main()
 	}
 
 	Player player(&RightSide, sf::Vector2u(4,4),0.3f,85.0f);   
-	
+	enemyDieAnimation.loadFromFile("res/img/EnemyDieAnimation.png");
 	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
 	vector <Bullet> bullet;
+	vector <Item> itemDrop;
 	bulletTexture.loadFromFile("res/img/bullet.png");
 	vector <Platform> wall;
 	wall.push_back(Platform(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 38.0f)));
@@ -171,8 +175,10 @@ int main()
 
 		player.Update(deltaTime);
 		updateBullet(bullet,deltaTime);
+		
 		//cout << player.Getposition().x << " "<<player.Getposition().y << "\n";
-		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y);
+		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y,&enemyDieAnimation,&ItemTexture,itemDrop);
+		updateItem(itemDrop,deltaTime);
 		Collider playerCollison = player.GetCollider();
 		
 		for (int i=0;i<wall.size();i++)
@@ -203,6 +209,7 @@ int main()
 		
 		drawBullet(bullet,window);
 		drawEnemy(enemies1,window);
+		drawItem(itemDrop,window);
 		player.Draw(window);
 		window.display();
 		
@@ -291,15 +298,60 @@ void createEnemy(vector<Enemies> &enemy,int randSpawn,sf::Texture *Enemies1Textu
 	
 
 }
-void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float playerPosY)
+void updateItem(vector<Item> &item,float deltaTime)
+{
+	for (Item& item : item)
+	{
+		item.Update(deltaTime);
+	}
+}
+void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float playerPosY,sf::Texture* dieAnimation,sf::Texture* ItemTexture,vector<Item>& item)
 {
 	for (int i=0;i<vect.size();i++)
 	{
 		vect[i].Update(deltaTime,playerPosX,playerPosY);
-		if (vect[i].getHp()==0)
+		if (vect[i].getHp()<=0)
 		{
-			vect.erase(vect.begin()+i);
+			vect[i].dieAnimation(dieAnimation,false);
+			if (vect[i].dieComplete())
+			{
+				int itemDropRate = rand();
+				itemDropRate %= 100;
+				cout << itemDropRate<<endl;
+				switch (itemDropRate)
+				{
+				case 0: case 10:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 0));
+					break;
+				case 1:case 14:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 1));
+					break;
+				case 2:case 18:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 2));
+					break;
+				case 3:case 22:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 3));
+					break;
+				case 4:case 34:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 4));
+					break;
+				case 5:case 46:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 5));
+					break;
+				case 99:case 76:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 6));
+					break;
+				}
+				vect.erase(vect.begin()+i);
+			}
 		}
+	}
+}
+void drawItem(vector<Item>& vect,sf::RenderWindow& window)
+{
+	for (Item& item : vect)
+	{
+		item.Draw(window);
 	}
 }
 void drawEnemy(vector<Enemies>& enemy,sf::RenderWindow& window)
@@ -368,6 +420,7 @@ void updateBullet(vector<Bullet>& vect,float deltaTime)
 {
 	for (Bullet& bullet : vect)
 	{
+
 		bullet.Update(deltaTime);
 	}
 }
@@ -392,8 +445,7 @@ void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>
 		}
 	
 		for (Enemies& enemy : enemy)
-		{
-			cout << enemy.getHp() << endl;
+		{		
 			if (enemy.GetCollider().CheckCollider(bulletCollision))
 			{
 				bullet.bulletCheck(true);

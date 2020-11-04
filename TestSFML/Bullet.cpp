@@ -69,3 +69,4 @@ void Bullet::bulletCheck(bool check)
 {
 	this->bulletDestroy = check;
 }
+

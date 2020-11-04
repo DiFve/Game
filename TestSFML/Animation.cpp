@@ -15,6 +15,18 @@ Animation::~Animation()
 {
 }
 
+void Animation::changeImageCount(sf::Vector2u imageCount)
+{
+	this->imageCount = imageCount;
+}
+
+void Animation::changeSwitchTime(float switchTime)
+{
+	this->switchTime = switchTime;
+}
+
+
+
 void Animation::Update(int row , float deltaTime,int check)
 {
 	currentImage.y = row;

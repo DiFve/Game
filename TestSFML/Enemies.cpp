@@ -1,9 +1,10 @@
 #include "Enemies.h"
-
+#include<iostream>
 Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp) :
 	animation(texture, imageCount, switchTime)
 {
 	this->hp = hp;
+	prevhp = this->hp;
 	this->speed = speed;
 	check = 0;
 	row = 0;
@@ -21,24 +22,33 @@ void Enemies::Update(float deltaTime,float playerX, float playerY)
 	int randTime = rand();
 	randTime %= 2500;
 	randTime += 1000;
-	
-	if (body.getPosition().x>playerX)
+	if (prevhp!=hp)
+	{
+		body.setFillColor(sf::Color(128,128,128));
+		shotFrame--;
+	}
+	if (shotFrame <= 0)
+	{
+		shotFrame = 60;
+		body.setFillColor(sf::Color(255, 255, 255));
+		prevhp = hp;
+	}
+	if (body.getPosition().x>playerX && isAlive)
 	{
 		movement.x -= speed * deltaTime;
 	}
-	if (body.getPosition().x < playerX)
+	if (body.getPosition().x < playerX && isAlive)
 	{
 		movement.x += speed * deltaTime;
 	}
-	if (body.getPosition().y < playerY)
+	if (body.getPosition().y < playerY && isAlive)
 	{
 		movement.y += speed * deltaTime;
 	}
-	if (body.getPosition().y > playerY)
+	if (body.getPosition().y > playerY && isAlive)
 	{
 		movement.y -= speed * deltaTime;
 	}
-	//std::cout << body.getPosition().x <<"\n";
 	animation.Update(row, deltaTime, 1);
 	body.setTextureRect(animation.uvRect);
 	body.move(movement);
@@ -46,13 +56,34 @@ void Enemies::Update(float deltaTime,float playerX, float playerY)
 
 void Enemies::Draw(sf::RenderWindow& window)
 {
-
 	window.draw(body);
 }
 
 void Enemies::setHp(int hp)
 {
 	this->hp = hp;
+}
+
+void Enemies::dieAnimation(sf::Texture* texture,bool isAlive)
+{
+	this->isAlive = isAlive;
+	animation.changeImageCount(sf::Vector2u(6, 1));
+	animation.changeSwitchTime(0.1f);
+	body.setTexture(texture);
+	--dieFrame;
+}
+
+bool Enemies::dieComplete()
+{
+	if (dieFrame <= 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+	
 }
 
 

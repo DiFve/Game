@@ -19,7 +19,7 @@ private:
 	sf::RectangleShape body;
 	Animation animation;
 	unsigned int check;
-	unsigned int row;
+	unsigned int row=0;
 	float speed;
 	int direction;
 };

@@ -10,6 +10,7 @@ public:
 
 	void Update(float deltaTime);
 	void Draw(sf::RenderWindow& window);
+	void setPlayerSpeed(float speed);
 
 	sf::Vector2f Getposition() { return body.getPosition(); }
 	Collider GetCollider() { return Collider(body); }

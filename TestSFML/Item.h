@@ -9,6 +9,7 @@ public:
 	Item(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float EnemyX, float EnemyY,int row);
 	void Update(float deltaTime);
 	void Draw(sf::RenderWindow& window); 
+	unsigned int whatRow() { return row; }
 	Collider GetCollider() { return Collider(body); }
 	~Item();
 private:

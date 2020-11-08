@@ -77,3 +77,8 @@ void Player::Draw(sf::RenderWindow& window)
 {
 	window.draw(body);
 }
+
+void Player::setPlayerSpeed(float speed)
+{
+	this->speed = speed;
+}

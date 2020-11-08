@@ -24,6 +24,11 @@ void updateBullet(vector<Bullet>& vect, float deltaTime);
 void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
 void drawItem(vector<Item>& vect, sf::RenderWindow& window);
 void updateItem(vector<Item>& item, float deltaTime);
+void itemCollider(vector<Item>& item, Player& player);
+
+int bulletDelayCount=450;
+bool allDirItemOff = true;
+bool shotGunItemOff = true;
 
 int main()
 {
@@ -106,24 +111,25 @@ int main()
 	float deltaTime = 0.0f;
 	sf::Clock clock;
 	sf::Clock clockenemyMove;
+	
 	while (window.isOpen())
 	{
-		
+		if (deltaTime > 1.0f / 150.0f)
+		{
+			deltaTime = 1.0f / 150.0f;
+		}
 		int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
 		float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
 		float bulletDelay = bulletClock.getElapsedTime().asMilliseconds();
 		int randEnemy = rand();
-		if (enemySpawnTime>2500)
+		if (enemySpawnTime>1000)
 		{
 			createEnemy(enemies1,randEnemy,&Enemies1Texture);
 			enemySpawnClock.restart();
 		}
 		deltaTime = clock.restart().asSeconds();
 		sf::Event evnt;
-		/*if (deltaTime > 1.0f / 150.0f)
-		{
-			deltaTime = 1.0f / 150.0f;
-		}*/
+		
 		while (window.pollEvent(evnt))
 		{
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -136,7 +142,7 @@ int main()
 			}
 		}
 		
-		if (bulletDelay>450)
+		if (bulletDelay>bulletDelayCount && allDirItemOff && shotGunItemOff)
 		{
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)&& sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 			{
@@ -170,17 +176,86 @@ int main()
 			{
 				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
 			}
+			
 			bulletClock.restart();
 		}
+		if (bulletDelay > bulletDelayCount && allDirItemOff==false)
+		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+				bulletClock.restart();
+				
+			}
+		}
+		if (bulletDelay > bulletDelayCount && shotGunItemOff == false)
+		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 10, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 11, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 22, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 23, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 18, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 19, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 14, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 15, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 8, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 9, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 12, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 13, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 20, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 21, &bulletTexture);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 16, &bulletTexture);
+				createBullet(bullet, player.Getposition().x, player.Getposition().y, 17, &bulletTexture);
+			}
 
+			bulletClock.restart();
+		}
+		updateBullet(bullet, deltaTime);
 		player.Update(deltaTime);
-		updateBullet(bullet,deltaTime);
-		
-		//cout << player.Getposition().x << " "<<player.Getposition().y << "\n";
+		//updateBullet(bullet,deltaTime);
+	
 		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y,&enemyDieAnimation,&ItemTexture,itemDrop);
 		updateItem(itemDrop,deltaTime);
+
 		Collider playerCollison = player.GetCollider();
-		
 		for (int i=0;i<wall.size();i++)
 		{
 			wall[i].GetCollider().CheckCollider(playerCollison);
@@ -188,6 +263,7 @@ int main()
 
 		enemyCollider(enemies1,wall);
 		bulletCollider(bullet,wall,enemies1);
+		itemCollider(itemDrop,player);
 
 		window.clear();
 		window.draw(BackGround);
@@ -217,6 +293,10 @@ int main()
 	
 	return 0;
 }
+sf::Clock coffeeClock;
+sf::Clock rapidFireClock;
+sf::Clock allDirectionsFireClock;
+sf::Clock shotGunFireClock;
 void enemyCollider(vector<Enemies> &enemy,vector<Platform> &wall)
 {
 	for (Enemies& enemy : enemy)
@@ -316,30 +396,30 @@ void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float 
 			if (vect[i].dieComplete())
 			{
 				int itemDropRate = rand();
-				itemDropRate %= 100;
-				cout << itemDropRate<<endl;
+				itemDropRate %= 200;
+				//cout << itemDropRate<<endl;
 				switch (itemDropRate)
 				{
-				case 0: case 10:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 0));
+				case 0: case 10: case 115: case 127:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 0)); //Shoot 8 directions
 					break;
-				case 1:case 14:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 1));
+				case 1:case 14: case 118: case 124:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 1)); //Shoot rapidly
 					break;
-				case 2:case 18:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 2));
+				case 2:case 18: case 132: case 135:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 2)); //Clear all monster
 					break;
-				case 3:case 22:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 3));
+				case 3:case 22: case 125: case 147:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 3)); //Speed Boost
 					break;
-				case 4:case 34:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 4));
+				case 4:case 34: case 199: case 170:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 4)); //Shoot 3 directions
 					break;
-				case 5:case 46:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 5));
+				case 5:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 5)); //Life up
 					break;
-				case 99:case 76:
-					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 6));
+				case 99:
+					item.push_back(Item(ItemTexture, sf::Vector2u(1, 7), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 6)); //All in one
 					break;
 				}
 				vect.erase(vect.begin()+i);
@@ -352,6 +432,64 @@ void drawItem(vector<Item>& vect,sf::RenderWindow& window)
 	for (Item& item : vect)
 	{
 		item.Draw(window);
+	}
+}
+void itemCollider(vector<Item> &item,Player &player)
+{
+	for (int i=0;i<item.size();i++)
+	{
+		
+		Collider playerCollision = player.GetCollider();
+		if (item[i].GetCollider().itemColliderCheck(playerCollision))
+		{
+			//cout << item[i].whatRow() << endl;
+			switch (item[i].whatRow())
+			{
+			case 0:			//ยิง8ทิศ
+				allDirItemOff = false;
+				allDirectionsFireClock.restart();
+				break;
+			case 1:			//ปืนกล
+				bulletDelayCount = 145;
+				rapidFireClock.restart();
+				break;
+			case 3:			//กาแฟ
+				player.setPlayerSpeed(120.0f);
+				coffeeClock.restart();
+				break;
+			case 4:			//Shotgun
+				shotGunItemOff = false;
+				shotGunFireClock.restart();
+				break;
+			case 6:		//All in one
+				bulletDelayCount = 145;
+				rapidFireClock.restart();
+				player.setPlayerSpeed(120.0f);
+				coffeeClock.restart();
+				shotGunItemOff = false;
+				shotGunFireClock.restart();
+				break;
+			}
+		
+			item.erase(item.begin() + i);
+		}
+		
+	}
+	if (coffeeClock.getElapsedTime().asSeconds() > 12)
+	{
+		player.setPlayerSpeed(85.0f);
+	}
+	if (rapidFireClock.getElapsedTime().asSeconds()>12)
+	{
+		bulletDelayCount = 450;
+	}
+	if (shotGunFireClock.getElapsedTime().asSeconds() > 12)
+	{
+		shotGunItemOff = true;
+	}
+	if (allDirectionsFireClock.getElapsedTime().asSeconds() > 7)
+	{
+		allDirItemOff = true;
 	}
 }
 void drawEnemy(vector<Enemies>& enemy,sf::RenderWindow& window)
@@ -376,42 +514,122 @@ void createBullet(vector<Bullet>& bullet,float playerPosX, float playerPosY, int
 	{
 		case(0):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4),0.3f,200.0f,0,playerPosX,playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4),0.3f,250.0f,0,playerPosX,playerPosY));
 			break;
 		}
 		case(1):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 1,playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 1,playerPosX, playerPosY));
 			break;
 		}
 		case(2):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 2,playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 2,playerPosX, playerPosY));
 			break;
 		}
 		case(3):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 3,playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 3,playerPosX, playerPosY));
 			break;
 		}
 		case(4):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 4, playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 4, playerPosX, playerPosY));
 			break;
 		}
 		case(5):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 5, playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 5, playerPosX, playerPosY));
 			break;
 		}
 		case(6):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 6, playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 6, playerPosX, playerPosY));
 			break;
 		}
 		case(7):
 		{
-			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 200.0f, 7, playerPosX, playerPosY));
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 7, playerPosX, playerPosY));
+			break;
+		}
+		case(8):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 8, playerPosX, playerPosY));
+			break;
+		}
+		case(9):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 9, playerPosX, playerPosY));
+			break;
+		}
+		case(10):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 10, playerPosX, playerPosY));
+			break;
+		}
+		case(11):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 11, playerPosX, playerPosY));
+			break;
+		}
+		case(12):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 12, playerPosX, playerPosY));
+			break;
+		}
+		case(13):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 13, playerPosX, playerPosY));
+			break;
+		}
+		case(14):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 14, playerPosX, playerPosY));
+			break;
+		}
+		case(15):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 15, playerPosX, playerPosY));
+			break;
+		}
+		case(16):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 16, playerPosX, playerPosY));
+			break;
+		}
+		case(17):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 17, playerPosX, playerPosY));
+			break;
+		}
+		case(18):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 18, playerPosX, playerPosY));
+			break;
+		}
+		case(19):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 19, playerPosX, playerPosY));
+			break;
+		}
+		case(20):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 20, playerPosX, playerPosY));
+			break;
+		}
+		case(21):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 21, playerPosX, playerPosY));
+			break;
+		}
+		case(22):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 22, playerPosX, playerPosY));
+			break;
+		}
+		case(23):
+		{
+			bullet.push_back(Bullet(bulletTexture, sf::Vector2u(1, 4), 0.3f, 250.0f, 23, playerPosX, playerPosY));
 			break;
 		}
 	}
@@ -433,14 +651,14 @@ void drawBullet(vector<Bullet>& vect,sf::RenderWindow& window)
 }
 void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>& enemy)
 {
-	for (Bullet& bullet : vect)
+	for (int i=0;i<vect.size();i++)
 	{
-		Collider bulletCollision = bullet.GetCollider();
+		Collider bulletCollision = vect[i].GetCollider();
 		for (Platform& wall : wall)
 		{
 			if (wall.GetCollider().CheckCollider(bulletCollision))
 			{
-				bullet.bulletCheck(true);
+				vect[i].bulletCheck(true);
 			}
 		}
 	
@@ -448,17 +666,14 @@ void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>
 		{		
 			if (enemy.GetCollider().CheckCollider(bulletCollision))
 			{
-				bullet.bulletCheck(true);
+				vect[i].bulletCheck(true);
 				enemy.setHp(enemy.getHp()-1);
 				
 			}
 		}
-		for (int i = 0; i < vect.size(); i++)
+		if (vect[i].isDestroy())
 		{
-			if (bullet.isDestroy())
-			{
-				vect.erase(vect.begin()+i);
-			}
+			vect.erase(vect.begin()+i);
 		}
 	}
 	

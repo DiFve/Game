@@ -16,7 +16,6 @@ void Item::Update(float deltaTime)
 {
 	animation.Update(row, deltaTime, 1);
 	body.setTextureRect(animation.uvRect);
-	
 }
 
 void Item::Draw(sf::RenderWindow& window)

@@ -52,9 +52,27 @@ bool Collider::CheckCollider(Collider& other)
                 other.Move(0.0f,intersectY * push);
             }
         }
-
         return true;
     }
 
+    return false;
+}
+
+bool Collider::itemColliderCheck(Collider& other)
+{
+    sf::Vector2f otherPosition = other.Getposition();
+    sf::Vector2f otherHalfSize = other.GetHalfSize();
+    sf::Vector2f thisPosition = Getposition();
+    sf::Vector2f thisHalfSize = GetHalfSize();
+
+    float deltaX = otherPosition.x - thisPosition.x;
+    float deltaY = otherPosition.y - thisPosition.y;
+    float intersectX = abs(deltaX) - (otherHalfSize.x + thisHalfSize.x);
+    float intersectY = abs(deltaY) - (otherHalfSize.y + thisHalfSize.y);
+
+    if (intersectX < 0.0f && intersectY < 0.0f)
+    {
+        return true;
+    }
     return false;
 }

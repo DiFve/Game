@@ -11,9 +11,12 @@ public:
 	void Draw(sf::RenderWindow& window); 
 	unsigned int whatRow() { return row; }
 	Collider GetCollider() { return Collider(body); }
+	bool isTimeExcess();
 	~Item();
 private:
 	sf::RectangleShape body;
+	sf::Clock itemTimeLeft;
+	sf::Clock delayItemShow;
 	Animation animation;
 	unsigned int row;
 	int randRate;

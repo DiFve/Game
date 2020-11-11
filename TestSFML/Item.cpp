@@ -20,7 +20,36 @@ void Item::Update(float deltaTime)
 
 void Item::Draw(sf::RenderWindow& window)
 {
-	window.draw(body);
+	if (itemTimeLeft.getElapsedTime().asMilliseconds() > 5800)
+	{
+		if (delayItemShow.getElapsedTime().asMilliseconds()>200 && delayItemShow.getElapsedTime().asMilliseconds() < 400)
+		{
+			window.draw(body);
+		}
+		else if(delayItemShow.getElapsedTime().asMilliseconds() > 400)
+		{
+			delayItemShow.restart();
+		}
+	}
+	else
+	{
+		window.draw(body);
+	}
+}
+
+
+
+bool Item::isTimeExcess()
+{
+	if (itemTimeLeft.getElapsedTime().asSeconds()>8)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+	
 }
 
 Item::~Item()

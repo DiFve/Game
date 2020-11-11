@@ -7,15 +7,17 @@
 class Enemies
 {
 public:
-	Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed, float x,float y,int hp);
+	Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed, float x,float y,int hp,int randItem);
 	void Update(float deltaTime, float playerX, float playerY);
 	void Draw(sf::RenderWindow& window);
 	void setHp(int hp);
-	void dieAnimation(sf::Texture* texture, bool isAlive);
+	void dieAnimation(sf::Texture* texture, bool isAlive, sf::Vector2u imageCount);
 	float GetPositionX() { return body.getPosition().x; }
 	float GetPositionY() { return body.getPosition().y; }
 	bool dieComplete();
 	int getHp() { return hp; }
+	int randItemRate() { return randItem; }
+	bool isThisAlive() { return isAlive; }
 	Collider GetCollider() { return Collider(body); }
 	~Enemies();
 private:
@@ -26,6 +28,8 @@ private:
 	float speed;
 	bool isAlive = true;
 	int hp,prevhp;
-	int dieFrame = 100,shotFrame=60;
+	int randItem;
+	int dieFrame = 60,shotFrame=60;
+	
 };
 

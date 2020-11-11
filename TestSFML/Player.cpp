@@ -67,7 +67,7 @@ void Player::Update(float deltaTime)
 		check = 1;
 
 	}
-	//std::cout<<body.getPosition().x;
+	//std::cout<<body.getPosition().x << " " << body.getPosition().y << std::endl;
 	animation.Update(row,deltaTime,check);
 	body.setTextureRect(animation.uvRect);
 	body.move(movement);

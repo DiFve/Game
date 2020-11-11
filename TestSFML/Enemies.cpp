@@ -1,8 +1,9 @@
 #include "Enemies.h"
 #include<iostream>
-Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp) :
+Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp, int randItem) :
 	animation(texture, imageCount, switchTime)
 {
+	this->randItem = randItem;
 	this->hp = hp;
 	prevhp = this->hp;
 	this->speed = speed;
@@ -64,10 +65,10 @@ void Enemies::setHp(int hp)
 	this->hp = hp;
 }
 
-void Enemies::dieAnimation(sf::Texture* texture,bool isAlive)
+void Enemies::dieAnimation(sf::Texture* texture,bool isAlive, sf::Vector2u imageCount)
 {
 	this->isAlive = isAlive;
-	animation.changeImageCount(sf::Vector2u(6, 1));
+	animation.changeImageCount(imageCount);
 	animation.changeSwitchTime(0.1f);
 	body.setTexture(texture);
 	--dieFrame;

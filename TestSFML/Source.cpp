@@ -12,6 +12,7 @@
 #include"Item.h"
 #include"Enemies.h"
 #include"Bullet.h"
+#include "BombEffect.h"
 using namespace std;
 void showHighScore(int x,int y,string word, sf::RenderWindow& window, sf::Font* font);
 void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture);
@@ -24,12 +25,20 @@ void updateBullet(vector<Bullet>& vect, float deltaTime);
 void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
 void drawItem(vector<Item>& vect, sf::RenderWindow& window);
 void updateItem(vector<Item>& item, float deltaTime);
-void itemCollider(vector<Item>& item, Player& player);
+void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf::Texture* bombItemAnimation);
+void createBombEffect1(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
+void createBombEffect2(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
+void createBombEffect3(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
+void updateBombEffect(vector <BombEffect>& effect, float deltaTime);
+void drawBombEffect(vector <BombEffect>& effect, sf::RenderWindow& window);
 
 int bulletDelayCount=450;
 bool allDirItemOff = true;
 bool shotGunItemOff = true;
-
+int enemySpawnDelay = 1000;
+bool effect1On = false;
+bool effect2On = false;
+bool effect3On = false;
 int main()
 {
 	srand(time(NULL));
@@ -44,6 +53,7 @@ int main()
 	sf::Texture bulletTexture;
 	sf::Texture enemyDieAnimation;
 	sf::Texture ItemTexture;
+	sf::Texture  bombItemAnimation;
 	//------------HIGHSCORE------------------
 	font.loadFromFile("Blockbusted.ttf");
 	string nameTest="dd";
@@ -80,6 +90,7 @@ int main()
 	//------------HIGHSCORE------------------
 	ItemTexture.loadFromFile("res/img/Item.png");
 	BG1.loadFromFile("res/img/BG1.png");
+	bombItemAnimation.loadFromFile("res/img/BombEffect.png");
 	sf::RectangleShape BackGround(sf::Vector2f(640.0f, 640.0f));
 	BackGround.setOrigin(320.0f,320.0f);
 	BackGround.setPosition(540.0f, 360.0f);
@@ -94,6 +105,12 @@ int main()
 	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
 	vector <Bullet> bullet;
 	vector <Item> itemDrop;
+	vector <BombEffect> effect1;
+	vector <BombEffect> effect2;
+	vector <BombEffect> effect3;
+	createBombEffect1(effect1,&bombItemAnimation);
+	createBombEffect2(effect2, &bombItemAnimation);
+	createBombEffect3(effect3, &bombItemAnimation);
 	bulletTexture.loadFromFile("res/img/bullet.png");
 	vector <Platform> wall;
 	wall.push_back(Platform(nullptr, sf::Vector2f(640.0f, 5.0f), sf::Vector2f(540.0f, 38.0f)));
@@ -121,10 +138,17 @@ int main()
 		int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
 		float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
 		float bulletDelay = bulletClock.getElapsedTime().asMilliseconds();
-		int randEnemy = rand();
-		if (enemySpawnTime>1000)
+		
+		if (enemySpawnTime>enemySpawnDelay)
 		{
-			createEnemy(enemies1,randEnemy,&Enemies1Texture);
+			for (int i=0;i<2;i++)
+			{
+				int randEnemy = rand();
+				createEnemy(enemies1,randEnemy,&Enemies1Texture);
+			}
+				
+			
+			enemySpawnDelay = 1000;
 			enemySpawnClock.restart();
 		}
 		deltaTime = clock.restart().asSeconds();
@@ -250,10 +274,12 @@ int main()
 		}
 		updateBullet(bullet, deltaTime);
 		player.Update(deltaTime);
-		//updateBullet(bullet,deltaTime);
 	
 		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y,&enemyDieAnimation,&ItemTexture,itemDrop);
 		updateItem(itemDrop,deltaTime);
+		updateBombEffect(effect1, deltaTime);
+		updateBombEffect(effect2, deltaTime);
+		updateBombEffect(effect3,deltaTime);
 
 		Collider playerCollison = player.GetCollider();
 		for (int i=0;i<wall.size();i++)
@@ -263,7 +289,7 @@ int main()
 
 		enemyCollider(enemies1,wall);
 		bulletCollider(bullet,wall,enemies1);
-		itemCollider(itemDrop,player);
+		itemCollider(itemDrop,player,enemies1,&bombItemAnimation);
 
 		window.clear();
 		window.draw(BackGround);
@@ -282,10 +308,21 @@ int main()
 		showHighScore(100, 160, to_string(userScore[1].first), window,&font);
 		
 		//---------------SHOWHIGHSCORE-------------
-		
 		drawBullet(bullet,window);
 		drawEnemy(enemies1,window);
 		drawItem(itemDrop,window);
+		if (effect1On)
+		{
+			drawBombEffect(effect1, window);
+		}
+		else if (effect2On)
+		{
+			drawBombEffect(effect2, window);
+		}
+		else if (effect3On)
+		{
+			drawBombEffect(effect3, window);
+		}
 		player.Draw(window);
 		window.display();
 		
@@ -297,6 +334,8 @@ sf::Clock coffeeClock;
 sf::Clock rapidFireClock;
 sf::Clock allDirectionsFireClock;
 sf::Clock shotGunFireClock;
+sf::Clock bombEffectClock;
+int effectRand=-1;
 void enemyCollider(vector<Enemies> &enemy,vector<Platform> &wall)
 {
 	for (Enemies& enemy : enemy)
@@ -307,71 +346,70 @@ void enemyCollider(vector<Enemies> &enemy,vector<Platform> &wall)
 			wall.GetCollider().CheckCollider(enemy1Collision);
 		}
 	}
-	
 }
 void createEnemy(vector<Enemies> &enemy,int randSpawn,sf::Texture *Enemies1Texture)
 {
-	randSpawn %= 12;
-	switch (randSpawn)
+	int itemDropRate = rand();
+	switch (randSpawn%12)
 	{
 		case(0):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2,2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2,2,(itemDropRate*randSpawn)));
 			break;
 		}
 		case(1):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(2):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(3):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(4):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(5):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(6):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(7):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(8):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5, 2));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5, 2, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(9):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663, 1));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663, 1, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(10):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663, 1));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663, 1, (itemDropRate * randSpawn)));
 			break;
 		}
 		case(11):
 		{
-			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663, 1));
+			enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663, 1, (itemDropRate * randSpawn)));
 			break;
 		}
 	}
@@ -386,18 +424,20 @@ void updateItem(vector<Item> &item,float deltaTime)
 	}
 }
 void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float playerPosY,sf::Texture* dieAnimation,sf::Texture* ItemTexture,vector<Item>& item)
-{
+{	
 	for (int i=0;i<vect.size();i++)
 	{
+		
 		vect[i].Update(deltaTime,playerPosX,playerPosY);
 		if (vect[i].getHp()<=0)
 		{
-			vect[i].dieAnimation(dieAnimation,false);
+			vect[i].dieAnimation(dieAnimation,false,sf::Vector2u(6,1));
 			if (vect[i].dieComplete())
 			{
-				int itemDropRate = rand();
+				int dieItemRate = rand();
+				int itemDropRate = vect[i].randItemRate()+dieItemRate;
 				itemDropRate %= 200;
-				//cout << itemDropRate<<endl;
+				//cout << itemDropRate <<endl;
 				switch (itemDropRate)
 				{
 				case 0: case 10: case 115: case 127:
@@ -429,16 +469,20 @@ void updateEnemy(vector<Enemies>& vect,float deltaTime, float playerPosX, float 
 }
 void drawItem(vector<Item>& vect,sf::RenderWindow& window)
 {
-	for (Item& item : vect)
+	for (int i=0;i<vect.size();i++)
 	{
-		item.Draw(window);
+		vect[i].Draw(window);
 	}
 }
-void itemCollider(vector<Item> &item,Player &player)
+void itemCollider(vector<Item> &item,Player &player, vector<Enemies> &enemy, sf::Texture* bombItemAnimation)
 {
 	for (int i=0;i<item.size();i++)
 	{
-		
+		if (item[i].isTimeExcess())
+		{
+			item.erase(item.begin() + i);
+			continue;
+		}
 		Collider playerCollision = player.GetCollider();
 		if (item[i].GetCollider().itemColliderCheck(playerCollision))
 		{
@@ -452,6 +496,12 @@ void itemCollider(vector<Item> &item,Player &player)
 			case 1:			//ปืนกล
 				bulletDelayCount = 145;
 				rapidFireClock.restart();
+				break;
+			case 2:			//Clear all	
+				enemy.erase(enemy.begin(),enemy.end());
+				bombEffectClock.restart();
+				enemySpawnDelay = 2500;
+				effectRand = rand();
 				break;
 			case 3:			//กาแฟ
 				player.setPlayerSpeed(120.0f);
@@ -470,10 +520,8 @@ void itemCollider(vector<Item> &item,Player &player)
 				shotGunFireClock.restart();
 				break;
 			}
-		
 			item.erase(item.begin() + i);
 		}
-		
 	}
 	if (coffeeClock.getElapsedTime().asSeconds() > 12)
 	{
@@ -490,6 +538,30 @@ void itemCollider(vector<Item> &item,Player &player)
 	if (allDirectionsFireClock.getElapsedTime().asSeconds() > 7)
 	{
 		allDirItemOff = true;
+	}
+	if (bombEffectClock.getElapsedTime().asMilliseconds() < 550)
+	{
+		switch (effectRand%3)
+		{
+		case 0:
+			effect1On = true;
+			cout << "1" << endl;
+			break;
+		case 1:
+			effect2On = true;
+			cout << "2" << endl;
+			break;
+		case 2:
+			effect3On = true;
+			cout << "3" << endl;
+			break;
+		}
+	}
+	else
+	{
+		effect1On = false;
+		effect2On = false;
+		effect3On = false;
 	}
 }
 void drawEnemy(vector<Enemies>& enemy,sf::RenderWindow& window)
@@ -664,7 +736,7 @@ void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>
 	
 		for (Enemies& enemy : enemy)
 		{		
-			if (enemy.GetCollider().CheckCollider(bulletCollision))
+			if (enemy.GetCollider().itemColliderCheck(bulletCollision) && enemy.isThisAlive())
 			{
 				vect[i].bulletCheck(true);
 				enemy.setHp(enemy.getHp()-1);
@@ -677,4 +749,57 @@ void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall,vector<Enemies>
 		}
 	}
 	
+}
+void createBombEffect1(vector <BombEffect>& effect, sf::Texture* bombItemAnimation)
+{
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 555, 80));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 375, 389));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 669, 400));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 469, 300));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 299, 600));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 500, 545));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 319, 109));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 699, 150));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 769, 620));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 750, 256));
+}
+void createBombEffect2(vector <BombEffect>& effect, sf::Texture* bombItemAnimation)
+{
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 379, 201));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 460, 130));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 712, 209));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 673, 383));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 748, 538));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 500, 545));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 322, 610));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 445, 450));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 444, 333));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 604, 298));
+}
+void createBombEffect3(vector <BombEffect>& effect, sf::Texture* bombItemAnimation)
+{
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 370, 291));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 267, 386));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 593, 622));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 774, 468));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 770, 351));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 619, 423));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 764, 240));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 470, 208));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 577, 126));
+	effect.push_back(BombEffect(bombItemAnimation, sf::Vector2u(5, 1), 472, 380));
+}
+void updateBombEffect(vector <BombEffect>& effect, float deltaTime)
+{
+	for (BombEffect& effect : effect)
+	{
+		effect.Update(deltaTime);
+	}
+}
+void drawBombEffect(vector <BombEffect>& effect, sf::RenderWindow& window)
+{
+	for (BombEffect& effect : effect)
+	{
+		effect.Draw(window);
+	}
 }

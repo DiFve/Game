@@ -1,2 +1,14 @@
-﻿  Item.cpp
+﻿  Source.cpp
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(47,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(148,24): warning C4244: 'initializing': conversion from 'sf::Int32' to 'float', possible loss of data
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(149,21): warning C4244: 'initializing': conversion from 'sf::Int32' to 'float', possible loss of data
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(403,118): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(408,124): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(413,123): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(418,120): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(423,120): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(438,121): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(453,121): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(642,22): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\User\source\repos\Main\TestSFML\TestSFML\Source.cpp(642,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
   TestSFML.vcxproj -> C:\Users\User\source\repos\Main\TestSFML\x64\Debug\TestSFML.exe

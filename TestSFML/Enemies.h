@@ -21,6 +21,7 @@ public:
 	Collider GetCollider() { return Collider(body); }
 	~Enemies();
 private:
+	
 	sf::RectangleShape body;
 	Animation animation;
 	unsigned int check=1;

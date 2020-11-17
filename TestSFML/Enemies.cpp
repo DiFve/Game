@@ -17,7 +17,6 @@ Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime
 
 void Enemies::Update(float deltaTime,float playerX, float playerY)
 {
-	
 	sf::Vector2f movement(0.0f, 0.0f);
 	srand(time(NULL));
 	int randTime = rand();

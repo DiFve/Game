@@ -9,7 +9,7 @@ public:
 	~Player();
 	bool isAliveReturn() { return isAlive; }
 	void Update(float deltaTime);
-	void Draw(sf::RenderWindow& window);
+	void Draw(sf::RenderWindow& window, int& min);
 	void setPlayerSpeed(float speed);
 	void dieAnimation(sf::Texture* texture, bool isAlive, sf::Vector2u imageCount);
 	sf::Vector2f Getposition() { return body.getPosition(); }

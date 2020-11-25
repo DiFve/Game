@@ -8,6 +8,9 @@ public:
 	~Platform();
 
 	void Draw(sf::RenderWindow& window);
+	void setFillColor(sf::Color color);
+	void setOutlineColor(sf::Color color);
+	void setOutlineThickness(int thick);
 	Collider GetCollider() { return Collider(body); }
 	
 

@@ -16,3 +16,19 @@ void Platform::Draw(sf::RenderWindow& window)
 {
 	window.draw(body);
 }
+
+void Platform::setFillColor(sf::Color color)
+{
+	body.setFillColor(color);
+}
+
+void Platform::setOutlineColor(sf::Color color)
+{
+	body.setOutlineColor(color);
+}
+
+void Platform::setOutlineThickness(int thick)
+{
+	body.setOutlineThickness(thick);
+}
+

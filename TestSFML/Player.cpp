@@ -81,7 +81,7 @@ void Player::Update(float deltaTime)
 	}
 }
 
-void Player::Draw(sf::RenderWindow& window)
+void Player::Draw(sf::RenderWindow& window,int &min)
 {
 	if (dieFrame>0)
 	{
@@ -95,6 +95,16 @@ void Player::Draw(sf::RenderWindow& window)
 		animation.changeImageCount(sf::Vector2u(4, 4));
 		body.setTexture(realTexture);
 		this->isAlive = true;
+		if (min > 130)	min = 150;
+		else
+		{
+			min += 20;
+			if ((min % 10) != 0)
+			{
+				min += (10 - (min % 10));
+			}
+		}
+		min++;
 	}
 	//std::cout << dieFrame << std::endl;
 }

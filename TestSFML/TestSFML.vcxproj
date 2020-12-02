@@ -148,22 +148,30 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="BombEffect.cpp" />
     <ClCompile Include="Bullet.cpp" />
+    <ClCompile Include="Button.cpp" />
     <ClCompile Include="Collider.cpp" />
+    <ClCompile Include="Decoration.cpp" />
+    <ClCompile Include="DecorationMove.cpp" />
     <ClCompile Include="Enemies.cpp" />
     <ClCompile Include="Item.cpp" />
     <ClCompile Include="Platform.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Textbox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="BombEffect.h" />
     <ClInclude Include="Bullet.h" />
+    <ClInclude Include="Button.h" />
     <ClInclude Include="Collider.h" />
+    <ClInclude Include="Decoration.h" />
+    <ClInclude Include="DecorationMove.h" />
     <ClInclude Include="Enemies.h" />
     <ClInclude Include="Item.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Textbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

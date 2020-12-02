@@ -7,7 +7,7 @@
 class Enemies
 {
 public:
-	Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed, float x,float y,int hp,int randItem);
+	Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed, float x,float y,int hp,int randItem, int type);
 	void Update(float deltaTime, float playerX, float playerY);
 	void Draw(sf::RenderWindow& window);
 	void setHp(int hp);
@@ -19,6 +19,11 @@ public:
 	int randItemRate() { return randItem; }
 	bool isThisAlive() { return isAlive; }
 	Collider GetCollider() { return Collider(body); }
+	void setSpeed(float speed);
+	bool isCollisionEnemy = false;
+	bool isCollisionWalls = false;
+	void movementUpdateCollision(float deltaTime, float otherX, float otherY);
+	int type;
 	~Enemies();
 private:
 	
@@ -28,6 +33,7 @@ private:
 	unsigned int row;
 	float speed;
 	bool isAlive = true;
+	
 	int hp,prevhp;
 	int randItem;
 	int dieFrame = 60,shotFrame=60;

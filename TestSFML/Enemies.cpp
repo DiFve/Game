@@ -1,8 +1,9 @@
 #include "Enemies.h"
 #include<iostream>
-Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp, int randItem) :
+Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime, float speed,float x, float y,int hp, int randItem,int type) :
 	animation(texture, imageCount, switchTime)
 {
+	this->type = type;
 	this->randItem = randItem;
 	this->hp = hp;
 	prevhp = this->hp;
@@ -17,6 +18,7 @@ Enemies::Enemies(sf::Texture* texture, sf::Vector2u imageCount, float switchTime
 
 void Enemies::Update(float deltaTime,float playerX, float playerY)
 {
+	speed = 40.0f;
 	sf::Vector2f movement(0.0f, 0.0f);
 	srand(time(NULL));
 	int randTime = rand();
@@ -33,22 +35,26 @@ void Enemies::Update(float deltaTime,float playerX, float playerY)
 		body.setFillColor(sf::Color(255, 255, 255));
 		prevhp = hp;
 	}
-	if (body.getPosition().x>playerX && isAlive)
+	if (!isCollisionEnemy)
 	{
-		movement.x -= speed * deltaTime;
+		if (body.getPosition().x>playerX && isAlive)
+		{
+			movement.x -= speed * deltaTime;
+		}
+		if (body.getPosition().x < playerX && isAlive)
+		{
+			movement.x += speed * deltaTime;
+		}
+		if (body.getPosition().y < playerY && isAlive)
+		{
+			movement.y += speed * deltaTime;
+		}
+		if (body.getPosition().y > playerY && isAlive)
+		{
+			movement.y -= speed * deltaTime;
+		}
 	}
-	if (body.getPosition().x < playerX && isAlive)
-	{
-		movement.x += speed * deltaTime;
-	}
-	if (body.getPosition().y < playerY && isAlive)
-	{
-		movement.y += speed * deltaTime;
-	}
-	if (body.getPosition().y > playerY && isAlive)
-	{
-		movement.y -= speed * deltaTime;
-	}
+	
 	animation.Update(row, deltaTime, 1);
 	body.setTextureRect(animation.uvRect);
 	body.move(movement);
@@ -86,6 +92,37 @@ bool Enemies::dieComplete()
 	
 }
 
+
+void Enemies::setSpeed(float speed)
+{
+	this->speed = speed;
+}
+
+void Enemies::movementUpdateCollision(float deltaTime, float otherX, float otherY)
+{
+	sf::Vector2f movement(0.0f, 0.0f);
+	if (isCollisionEnemy)
+	{
+		//std::cout << "T" << std::endl;
+		speed = 80.0f;
+		if (body.getPosition().x > otherX && isAlive)
+		{
+			movement.x -= speed * deltaTime;
+		}
+		if (body.getPosition().x < otherX && isAlive)
+		{
+			movement.x += speed * deltaTime;
+		}
+		if (body.getPosition().y < otherY && isAlive)
+		{
+			movement.y += speed * deltaTime;
+		}
+		if (body.getPosition().y > otherY && isAlive)
+		{
+			movement.y -= speed * deltaTime;
+		}
+	}
+}
 
 Enemies::~Enemies()
 {

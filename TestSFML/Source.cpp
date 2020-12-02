@@ -1,4 +1,10 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
+#define MENU 123
+#define HIGHSCORE 124
+#define CLOSE_HIGHSCORE 125
+#define INGAME 456
+#define ENDGAME 789
+#define EXIT -1
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include<string>
@@ -6,6 +12,7 @@
 #include<algorithm>
 #include<utility>
 #include<vector>
+#include<math.h> 
 #include<Windows.h>
 #include"Player.h" 
 #include"Platform.h"
@@ -13,14 +20,18 @@
 #include"Enemies.h"
 #include"Bullet.h"
 #include"BombEffect.h"
-#include<math.h> 
+#include"Button.h"
+#include"Decoration.h"
+#include"Textbox.h"
+#include"DecorationMove.h"
 using namespace std;
+int stateGame = MENU;
 void showText(int x, int y, string word, sf::RenderWindow& window, sf::Font* font, int charSize);
-void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture);
+void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture, int hp, int type);
 void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item);
 void drawEnemy(vector<Enemies>& enemy, sf::RenderWindow& window);
-void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy);
-void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall);
+void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy, vector<Platform>& extraWalls);
+void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall, vector<Platform>& extraWalls, float deltaTime);
 void createBullet(vector<Bullet>& bullet, float playerPosX, float playerPosY, int direction, sf::Texture* bulletTexture);
 void updateBullet(vector<Bullet>& vect, float deltaTime);
 void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
@@ -32,8 +43,10 @@ void createBombEffect2(vector <BombEffect>& effect, sf::Texture* bombItemAnimati
 void createBombEffect3(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
 void updateBombEffect(vector <BombEffect>& effect, float deltaTime);
 void drawBombEffect(vector <BombEffect>& effect, sf::RenderWindow& window);
-void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item);
-
+void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min);
+void drawExtraWalls(vector<Platform>& extraWalls, sf::RenderWindow& window);
+void restartAll(Player& player, vector<Enemies>& enemy, vector<Platform>& extraWalls, vector<Item>& item, vector<Bullet>& bullet);
+void customShowText(float x, float y, string word, sf::RenderWindow& window, sf::Font* font, int charSize, sf::Color textColor, sf::Color outLineColor, int thickness);
 int bulletDelayCount = 450;
 bool allDirItemOff = true;
 bool shotGunItemOff = true;
@@ -43,7 +56,7 @@ bool effect2On = false;
 int lifeLeft = 3;
 bool effect3On = false;
 int scoreIngame = 0;
-int timeLeftMin = 10;
+int timeLeftMin = 150;
 int enemyLeft = 0;
 float opacityArrow = 0;
 bool opacityChange = false;
@@ -52,19 +65,27 @@ sf::Clock rapidFireClock;
 sf::Clock allDirectionsFireClock;
 sf::Clock shotGunFireClock;
 sf::Clock bombEffectClock;
+sf::Clock enemySpawnClock;
+sf::Clock clockenemyMove;
+sf::Clock bulletClock;
+bool changeMap = false;
+bool deleteExtraWalls = false;
+bool createExtraWalls = false;
+bool realDelete = false;
+int currentLevel = 1;
+bool isShowHighScore = false;
+vector <DecorationMove> moveDec;
 int main()
 {
-	bool showArrow = false;
-	bool changeMap = false;
+
 	srand(time(NULL));
 	sf::Font font;
+	sf::Font menuFont;
 	sf::Clock changeMapDelay;
-	sf::Clock enemySpawnClock;
-	sf::Clock bulletClock;
 	sf::Clock timeLeft;
 	sf::Clock delayMapChange;
 	vector <Enemies> enemies1;
-	sf::RenderWindow window(sf::VideoMode(1080, 720), "Game Test!", sf::Style::Close);
+	sf::RenderWindow window(sf::VideoMode(1080, 720), "Adventure of the Prairie King!", sf::Style::Close);
 	sf::Texture RightSide;
 	sf::Texture Enemies1Texture;
 	sf::Texture BGTexture;
@@ -76,62 +97,90 @@ int main()
 	sf::Texture lifeLeftTexture;
 	sf::Texture playerDiedAnimation;
 	sf::Texture fence;
-	//------------HIGHSCORE------------------
+	sf::Texture Enemies2Texture;
+	sf::Texture menuBG;
+	sf::Texture tree;
+	sf::Texture dance;
+	sf::Texture how2play;
+	sf::Texture borderTexture;
+	sf::Texture Enemies3Texture;
+	sf::Texture endgameTexture;
 	font.loadFromFile("Blockbusted.ttf");
-	string nameTest = "dd";
-	int scoreTest = 1;
-	//cin >> nameTest >> scoreTest;
-
-	vector <pair<int, string>> userScore;
-	char temp[255];
-	int score[6];
-	string name[6];
-	FILE* fp;
-	fp = fopen("./Score.txt", "r");
-	for (int i = 0; i < 5; i++)
-	{
-		fscanf(fp, "%s", temp);
-		name[i] = temp;
-		fscanf(fp, "%d", &score[i]);
-		userScore.push_back(make_pair(score[i], name[i]));
-	}
-	name[5] = nameTest;
-	score[5] = scoreTest;
-	userScore.push_back(make_pair(score[5], name[5]));
-	sort(userScore.begin(), userScore.end());
-	fclose(fp);
-	fopen("./Score.txt", "w");
-	for (int i = 5; i >= 1; i--)
-	{
-		strcpy(temp, userScore[i].second.c_str());
-		fprintf(fp, "%s %d\n", temp, userScore[i].first);
-		//cout << userScore[i].second << " " << userScore[i].first << "\n";
-	}
-	fclose(fp);
-
-	//------------HIGHSCORE------------------
+	menuFont.loadFromFile("Minecrafter.Reg.ttf");
+	
 	ItemTexture.loadFromFile("res/img/Item.png");
 	BGTexture.loadFromFile("res/img/BG1.png");
+	menuBG.loadFromFile("res/img/MenuTest.png");
+	tree.loadFromFile("res/img/treeDec.png");
+	dance.loadFromFile("res/img/menuDec.png");
+	how2play.loadFromFile("res/img/howtoplay.png");
+	borderTexture.loadFromFile("res/img/border.png");
+	endgameTexture.loadFromFile("res/img/EndgameScreen.png");
+
+	vector <Decoration> Dec;
+	Dec.push_back(Decoration(&tree, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(420.0f, 470.0f)));
+	Dec.push_back(Decoration(&dance, sf::Vector2u(4, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(400.0f, 620.0f)));
+	Dec.push_back(Decoration(&tree, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(260.0f, 570.0f)));
+	Dec.push_back(Decoration(&tree, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(450.0f, 660.0f)));
+	Dec.push_back(Decoration(&tree, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(260.0f, 255.0f)));
+	Dec.push_back(Decoration(&tree, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(32.0f, 32.0f), sf::Vector2f(830.0f, 340.0f)));
 	bombItemAnimation.loadFromFile("res/img/BombEffect.png");
-	arrowTexture.loadFromFile("res/img/Gonext.png");
 	sf::RectangleShape BackGround(sf::Vector2f(640.0f, 640.0f));
+	sf::RectangleShape menuBackGround(sf::Vector2f(640.0f, 640.0f));
+	sf::RectangleShape howtoplay(sf::Vector2f(160.0f, 72.0f));
+	sf::RectangleShape border(sf::Vector2f(280.0f, 355.0f));
+	sf::RectangleShape borderEndgame(sf::Vector2f(400.0f, 300.0f));
+	Decoration endGameBackground(&endgameTexture,sf::Vector2u(2,1),0.5f,sf::Vector2f(640.0f, 640.0f),sf::Vector2f(530.0f, 340.0f));
+
+	RightSide.loadFromFile("res/img/player.png");
+	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
+	Enemies2Texture.loadFromFile("res/img/Enemies2.png");
+	Enemies3Texture.loadFromFile("res/img/Enemies3.png");
+	moveDec.push_back(DecorationMove(&RightSide, sf::Vector2u(4, 4), 0.3f, 99.7f, sf::Vector2f(230.0f, 300.0f), 1, sf::Vector2f(35.0f, 35.0f)));
+	moveDec.push_back(DecorationMove(&Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(150.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
+	moveDec.push_back(DecorationMove(&Enemies2Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(110.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
+	moveDec.push_back(DecorationMove(&Enemies3Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(70.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
 	BackGround.setOrigin(320.0f, 320.0f);
 	BackGround.setPosition(540.0f, 360.0f);
-	int currentLevel = 2;
-	BackGround.setTexture(&BGTexture);
-	if (!RightSide.loadFromFile("res/img/player.png"))
-	{
-		cout << "Load failed" << endl;
-	}
+	menuBackGround.setOrigin(320.0f, 320.0f);
+	menuBackGround.setPosition(540.0f, 360.0f);
+	vector <Platform> invisWall;
+	invisWall.push_back(Platform(nullptr, sf::Vector2f(200.0f, 200.0f), sf::Vector2f(120.0f, 250.0f)));
+	invisWall.push_back(Platform(nullptr, sf::Vector2f(70.0f, 200.0f), sf::Vector2f(10.0f, 250.0f)));
+	invisWall.push_back(Platform(nullptr, sf::Vector2f(300.0f, 200.0f), sf::Vector2f(1010.0f, 250.0f)));
+	invisWall.push_back(Platform(nullptr, sf::Vector2f(70.0f, 200.0f), sf::Vector2f(1170.0f, 250.0f)));
+	invisWall[0].setFillColor(sf::Color::Black);
+	invisWall[1].setFillColor(sf::Color::Black);
+	invisWall[2].setFillColor(sf::Color::Black);
+	invisWall[3].setFillColor(sf::Color::Black);
+	howtoplay.setPosition(600.0f, 580.0f);
+	border.setPosition(250.0f, 290.0f);
+	border.setOutlineColor(sf::Color::Black);
+	border.setOutlineThickness(4);
+	border.setTexture(&borderTexture);
 
+	borderEndgame.setPosition(340.0f, 200.0f);
+	borderEndgame.setOutlineColor(sf::Color::Black);
+	borderEndgame.setOutlineThickness(4);
+	borderEndgame.setTexture(&borderTexture);
+
+	howtoplay.setTexture(&how2play);
+	menuBackGround.setTexture(&menuBG);
+	BackGround.setTexture(&BGTexture);
+
+	vector <Button> button;
+	button.push_back(Button(sf::Vector2f(600.0f, 400.0f), 30, &menuFont, INGAME, "PLAY"));
+	button.push_back(Button(sf::Vector2f(600.0f, 460.0f), 30, &menuFont, HIGHSCORE, "HIGHSCORE"));
+	button.push_back(Button(sf::Vector2f(600.0f, 520.0f), 30, &menuFont, EXIT, "EXIT"));
+	Button closeButton(sf::Vector2f(500.0f, 300.0f), 16, &menuFont, CLOSE_HIGHSCORE, "X");
+	Button continueButton(sf::Vector2f(460.0f, 435.0f), 30, &menuFont, MENU, "Continue");
 	Player player(&RightSide, sf::Vector2u(4, 4), 0.3f, 85.0f);
 	enemyDieAnimation.loadFromFile("res/img/EnemyDieAnimation.png");
-	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
+
 	lifeLeftTexture.loadFromFile("res/img/Life.png");
 	sf::RectangleShape Life(sf::Vector2f(32.0f, 32.0f));
 	Life.setPosition(110.0f, 40.0f);
 	Life.setTexture(&lifeLeftTexture);
-	Platform goNextArrow(&arrowTexture, sf::Vector2f(35.0f, 40.0f), sf::Vector2f(560.0f, 655.0f));
 	vector <Bullet> bullet;
 	vector <Item> itemDrop;
 	vector <BombEffect> effect1;
@@ -156,51 +205,28 @@ int main()
 	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 280.0f), sf::Vector2f(840.0f, 180.0f)));
 	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(240.0f, 560.0f)));
 	wall.push_back(Platform(nullptr, sf::Vector2f(40.0f, 240.0f), sf::Vector2f(840.0f, 560.0f)));
-	//Wall Level 2
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 220.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 220.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 220.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 220.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 540.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 540.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 540.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 540.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 260.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 260.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 500.0f)));
-	wall.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 500.0f)));
-	//Wall Level 2
+	vector <Platform> extraWalls;
 	float deltaTime = 0.0f;
 	sf::Clock clock;
-	sf::Clock clockenemyMove;
+	Textbox textbox1(24, sf::Color(120, 120, 120, 80), false, font, sf::Vector2f(600.0f, 340.0f));
+
+	string nameInGame = "NONAME";
+	vector <pair<int, string>> userScore;
+	char temp[255];
+	int score[6];
+	string name[6];
+	continueButton.isClick = true;
+
 	while (window.isOpen())
 	{
 		if (deltaTime > 1.0f / 150.0f)
 		{
 			deltaTime = 1.0f / 150.0f;
 		}
-		int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
-		float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
-		float bulletDelay = bulletClock.getElapsedTime().asMilliseconds();
-
-		if (enemySpawnTime > enemySpawnDelay && timeLeftMin > 0)
-		{
-			for (int i = 0; i < 1; i++)
-			{
-				int randEnemy = rand();
-				createEnemy(enemies1, randEnemy, &Enemies1Texture);
-			}
-
-
-			enemySpawnDelay = 1000;
-			enemySpawnClock.restart();
-		}
-		deltaTime = clock.restart().asSeconds();
 		sf::Event evnt;
-
 		while (window.pollEvent(evnt))
 		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+			if (stateGame == EXIT)
 			{
 				window.close();
 			}
@@ -208,200 +234,502 @@ int main()
 			{
 				window.close();
 			}
-		}
-
-		if (bulletDelay > bulletDelayCount && allDirItemOff && shotGunItemOff && player.isAliveReturn())
-		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			if (evnt.type == evnt.TextEntered)
 			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
-			}
-
-			bulletClock.restart();
-		}
-		if (bulletDelay > bulletDelayCount && !allDirItemOff && player.isAliveReturn())
-		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
-				bulletClock.restart();
-
+				textbox1.typedOn(evnt);
 			}
 		}
-		if (bulletDelay > bulletDelayCount && !shotGunItemOff && player.isAliveReturn())
-		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 10, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 11, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 22, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 23, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 18, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 19, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 14, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 15, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 8, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 9, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 12, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 13, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 20, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 21, &bulletTexture);
-			}
-			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-			{
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 16, &bulletTexture);
-				createBullet(bullet, player.Getposition().x, player.Getposition().y, 17, &bulletTexture);
-			}
-
-			bulletClock.restart();
-		}
-		updateBullet(bullet, deltaTime);
-		player.Update(deltaTime);
-
-		updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y, &enemyDieAnimation, &ItemTexture, itemDrop);
-		updateItem(itemDrop, deltaTime);
-		updateBombEffect(effect1, deltaTime);
-		updateBombEffect(effect2, deltaTime);
-		updateBombEffect(effect3, deltaTime);
-
-		Collider playerCollison = player.GetCollider();
-		for (int i = 0; i < wall.size(); i++)
-		{
-			wall[i].GetCollider().CheckCollider(playerCollison);
-		}
-
-		enemyCollider(enemies1, wall);
-		bulletCollider(bullet, wall, enemies1);
-		itemCollider(itemDrop, player, enemies1, &bombItemAnimation);
-		playerCollisionWithEnemies(enemies1, player, &playerDiedAnimation, bullet, itemDrop);
-
 		window.clear();
-		window.draw(BackGround);
-		//---------------SHOWHIGHSCORE-------------
-
-		/*showText(10, 10,"HIGHSCORE", window,&font,32);
-		showText(10, 40, userScore[5].second, window, &font,32);
-		showText(10, 70, userScore[4].second, window, &font,32);
-		showText(10, 100, userScore[3].second, window, &font,32);
-		showText(10, 130, userScore[2].second, window, &font,32);
-		showText(10, 160, userScore[1].second, window, &font,32);
-		showText(100, 40, to_string(userScore[5].first), window, &font,32);
-		showText(100, 70, to_string(userScore[4].first), window, &font,32);
-		showText(100, 100, to_string(userScore[3].first), window, &font,32);
-		showText(100, 130, to_string(userScore[2].first), window, &font,32);
-		showText(100, 160, to_string(userScore[1].first), window,&font,32);*/
-
-		//---------------SHOWHIGHSCORE-------------
-		if (currentLevel==2)
+		if (stateGame == MENU)
 		{
-			for (int i=12;i<=23;i++)
+			deltaTime = clock.restart().asSeconds();
+			restartAll(player, enemies1, extraWalls, itemDrop, bullet);
+			if (continueButton.isClick)
 			{
-				wall[i].Draw(window);
+				//------------HIGHSCORE------------------
+				userScore.erase(userScore.begin(), userScore.end());
+				FILE* fp;
+				fp = fopen("./Score.txt", "r");
+				for (int i = 0; i < 5; i++)
+				{
+					fscanf(fp, "%s", temp);
+					name[i] = temp;
+					fscanf(fp, "%d", &score[i]);
+					userScore.push_back(make_pair(score[i], name[i]));
+				}
+				name[5] = nameInGame;
+				score[5] = scoreIngame;
+				userScore.push_back(make_pair(score[5], name[5]));
+				sort(userScore.begin(), userScore.end());
+				fclose(fp);
+				fp = fopen("./Score.txt", "w");
+				for (int i = 5; i >= 1; i--)
+				{
+					strcpy(temp, userScore[i].second.c_str());
+					fprintf(fp, "%s %d\n", temp, userScore[i].first);
+				}
+				fclose(fp);
+
+				//------------HIGHSCORE------------------
+				isShowHighScore = false;
+				moveDec[0].setPosition(sf::Vector2f(230.0f, 300.0f));
+				moveDec[1].setPosition(sf::Vector2f(150.0f, 300.0f));
+				moveDec[2].setPosition(sf::Vector2f(110.0f, 300.0f));
+				moveDec[3].setPosition(sf::Vector2f(70.0f, 300.0f));
+				for (int i = 0; i < moveDec.size(); i++)
+				{
+					moveDec[i].isCollider = false;
+				}
+				textbox1.resetString();
+				continueButton.isClick = false;
+				scoreIngame = 0;
+				nameInGame = "NONAME";
+				cout << "POG" << endl;
+			}
+			for (int i = 0; i < button.size(); i++)
+			{
+				button[i].Update(sf::Mouse::getPosition(window), stateGame, isShowHighScore);
+			}
+
+			for (int i = 0; i < Dec.size(); i++)
+			{
+				Dec[i].Update(deltaTime);
+			}
+			for (int i = 0; i < moveDec.size(); i++)
+			{
+				moveDec[i].Update(deltaTime);
+			}
+			window.draw(menuBackGround);
+			for (int i = 0; i < button.size(); i++)
+			{
+				button[i].Draw(window);
+			}
+			textbox1.Update(sf::Mouse::getPosition(window));
+			customShowText(345, 90, "adventure", window, &menuFont, 35, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
+			customShowText(575, 90, "Of", window, &menuFont, 35, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
+			customShowText(645, 90, "the", window, &menuFont, 35, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
+			customShowText(320, 135, "Prairie King", window, &menuFont, 60, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 5);
+
+			for (int i = 0; i < Dec.size(); i++)
+			{
+				Dec[i].Draw(window);
+			}
+
+
+			window.draw(howtoplay);
+
+
+			for (int i = 0; i < moveDec.size(); i++)
+			{
+				moveDec[i].Draw(window);
+			}
+			for (int i = 0; i < invisWall.size(); i++)
+			{
+				invisWall[i].Draw(window);
+			}
+			if (isShowHighScore)
+			{
+				closeButton.Update(sf::Mouse::getPosition(window), stateGame, isShowHighScore);
+				window.draw(border);
+				customShowText(295, 315, "HIGHSCORE", window, &menuFont, 32, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
+				customShowText(270, 365, userScore[5].second, window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(270, 415, userScore[4].second, window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(270, 460, userScore[3].second, window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(270, 515, userScore[2].second, window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(270, 565, userScore[1].second, window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(430, 365, to_string(userScore[5].first), window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(430, 415, to_string(userScore[4].first), window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(430, 460, to_string(userScore[3].first), window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(430, 515, to_string(userScore[2].first), window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				customShowText(430, 565, to_string(userScore[1].first), window, &menuFont, 20, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+				closeButton.Draw(window);
+			}
+			textbox1.Draw(window);
+			
+			Collider wallcheck = invisWall[3].GetCollider();
+			Collider wallCheckAgain = invisWall[1].GetCollider();
+
+			if (moveDec[0].GetCollider().CheckCollider(wallcheck) || moveDec[0].GetCollider().CheckCollider(wallCheckAgain))
+			{
+				moveDec[0].isCollider = !moveDec[0].isCollider;
+				moveDec[1].isCollider = !moveDec[1].isCollider;
+				moveDec[2].isCollider = !moveDec[2].isCollider;
+				moveDec[3].isCollider = !moveDec[3].isCollider;
 			}
 		}
-		
-		if (player.isAliveReturn() && (timeLeft.getElapsedTime().asSeconds() > 1) && (timeLeftMin > 0))
+		if (stateGame == INGAME)
 		{
-			timeLeft.restart();
-			timeLeftMin--;
+			nameInGame = textbox1.getName();
+			if (textbox1.getName() == "")
+			{
+				nameInGame = "NONAME";
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+			{
+				stateGame = ENDGAME;
+				/*stateGame = MENU;
+				isShowHighScore = false;
+				moveDec[0].setPosition(sf::Vector2f(230.0f, 300.0f));
+				moveDec[1].setPosition(sf::Vector2f(150.0f, 300.0f));
+				moveDec[2].setPosition(sf::Vector2f(110.0f, 300.0f));
+				moveDec[3].setPosition(sf::Vector2f(70.0f, 300.0f));
+				for (int i = 0; i < moveDec.size(); i++)
+				{
+					moveDec[i].isCollider = false;
+				}
+				textbox1.resetString();*/
+			}
+			int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
+			float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
+			float bulletDelay = bulletClock.getElapsedTime().asMilliseconds();
+			if (currentLevel == 5 || lifeLeft < 0)
+			{
+				stateGame = ENDGAME;
+			}
+			if (enemySpawnTime > enemySpawnDelay && timeLeftMin > 0)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					int randEnemy = rand();
+					createEnemy(enemies1, randEnemy, &Enemies1Texture, 1, 1);
+				}
+				if (currentLevel > 1)
+				{
+					int randBigEnemy = rand();
+					int randEnemy = rand();
+					switch (randBigEnemy % 5)
+					{
+					case 2:
+						createEnemy(enemies1, randEnemy, &Enemies2Texture, 3, 3);
+						break;
+					}
+				}
+				enemySpawnDelay = 1800;
+				enemySpawnClock.restart();
+			}
+			if (timeLeftMin <= 0 && enemyLeft == 0)
+			{
+				changeMap = true;
+			}
+			if (changeMap)
+			{
+				currentLevel++;
+				deleteExtraWalls = true;
+				enemyLeft = -1;
+				changeMap = false;
+
+				timeLeftMin = 150;
+			}
+			if (deleteExtraWalls)
+			{
+				changeMapDelay.restart();
+				extraWalls.erase(extraWalls.begin(), extraWalls.end());
+				deleteExtraWalls = false;
+				createExtraWalls = true;
+			}
+			if (createExtraWalls)
+			{
+				enemySpawnClock.restart();
+				enemySpawnDelay = 8000;
+				if (currentLevel == 2)
+				{
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 220.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 220.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 220.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 220.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 540.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 540.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 540.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 540.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 500.0f)));
+				}
+				if (currentLevel == 3)
+				{
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(400.0f, 380.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(560.0f, 220.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(720.0f, 377.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(560.0f, 540.0f)));
+				}
+				if (currentLevel == 4)
+				{
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(480.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(520.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 300.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 340.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(640.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(600.0f, 260.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 300.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 340.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(480.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(520.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 460.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(440.0f, 420.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(640.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(600.0f, 500.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 460.0f)));
+					extraWalls.push_back(Platform(&fence, sf::Vector2f(40.0f, 40.0f), sf::Vector2f(680.0f, 420.0f)));
+				}
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
+				}
+
+				createExtraWalls = false;
+				enemyLeft = 0;
+			}
+			deltaTime = clock.restart().asSeconds();
+
+			if (bulletDelay > bulletDelayCount && allDirItemOff && shotGunItemOff && player.isAliveReturn())
+			{
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+				}
+
+				bulletClock.restart();
+			}
+			if (bulletDelay > bulletDelayCount && !allDirItemOff && player.isAliveReturn())
+			{
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+					bulletClock.restart();
+
+				}
+			}
+			if (bulletDelay > bulletDelayCount && !shotGunItemOff && player.isAliveReturn())
+			{
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 10, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 11, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 22, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 23, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 18, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 19, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 14, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 15, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 8, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 9, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 12, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 13, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 20, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 21, &bulletTexture);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+				{
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 16, &bulletTexture);
+					createBullet(bullet, player.Getposition().x, player.Getposition().y, 17, &bulletTexture);
+				}
+
+				bulletClock.restart();
+			}
+			updateBullet(bullet, deltaTime);
+			player.Update(deltaTime);
+			enemyCollider(enemies1, wall, extraWalls, deltaTime);
+			updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y, &enemyDieAnimation, &ItemTexture, itemDrop);
+			updateItem(itemDrop, deltaTime);
+			updateBombEffect(effect1, deltaTime);
+			updateBombEffect(effect2, deltaTime);
+			updateBombEffect(effect3, deltaTime);
+			Collider playerCollison = player.GetCollider();
+			for (int i = 0; i < wall.size(); i++)
+			{
+				wall[i].GetCollider().CheckCollider(playerCollison);
+			}
+			for (int i = 0; i < extraWalls.size(); i++)
+			{
+				extraWalls[i].GetCollider().CheckCollider(playerCollison);
+			}
+
+			bulletCollider(bullet, wall, enemies1, extraWalls);
+			itemCollider(itemDrop, player, enemies1, &bombItemAnimation);
+			playerCollisionWithEnemies(enemies1, player, &playerDiedAnimation, bullet, itemDrop, timeLeftMin);
+
+
+			window.draw(BackGround);
+
+			if (player.isAliveReturn() && (timeLeft.getElapsedTime().asSeconds() > 1) && (timeLeftMin > 0))
+			{
+				timeLeft.restart();
+				timeLeftMin--;
+			}
+			string timeLeftSec = "0";
+			if (timeLeftMin % 60 >= 10)
+			{
+				timeLeftSec = to_string(timeLeftMin % 60);
+			}
+			else
+			{
+				timeLeftSec += to_string(timeLeftMin % 60);
+			}
+			window.draw(Life);
+			showText(930, 50, "LEVEL :", window, &font, 32);
+			showText(1030, 50, to_string(currentLevel), window, &font, 32);
+			showText(150, 50, "x", window, &font, 12);
+			showText(930, 130, "SCORE", window, &font, 32);
+			showText(930, 180, to_string(scoreIngame), window, &font, 32);
+			showText(60, 150, "Time Left", window, &font, 32);
+			showText(80, 200, to_string(timeLeftMin / 60), window, &font, 32);
+			showText(100, 200, ":", window, &font, 32);
+			showText(120, 200, timeLeftSec, window, &font, 32);
+			showText(170, 40, to_string(lifeLeft), window, &font, 24);
+			drawBullet(bullet, window);
+			drawEnemy(enemies1, window);
+			drawItem(itemDrop, window);
+			if (effect1On)
+			{
+				drawBombEffect(effect1, window);
+			}
+			else if (effect2On)
+			{
+				drawBombEffect(effect2, window);
+			}
+			else if (effect3On)
+			{
+				drawBombEffect(effect3, window);
+			}
+			if (changeMapDelay.getElapsedTime().asMilliseconds() < 500)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 0));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 1000)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 1500)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 0));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 2000)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
+				}
+			}
+			//Start of Create
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 2500)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 0));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 3000)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 3500)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 0));
+				}
+			}
+			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 4000)
+			{
+				for (int i = 0; i < extraWalls.size(); i++)
+				{
+					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
+				}
+			}
+			drawExtraWalls(extraWalls, window);
+			player.Draw(window);
 		}
-		string timeLeftSec = "0";
-		if (timeLeftMin % 60 >= 10)
+		if (stateGame == ENDGAME)
 		{
-			timeLeftSec = to_string(timeLeftMin % 60);
+			
+			deltaTime = clock.restart().asSeconds();
+			endGameBackground.Update(deltaTime);
+			endGameBackground.Draw(window);
+			window.draw(borderEndgame);
+			continueButton.Update(sf::Mouse::getPosition(window), stateGame, isShowHighScore);
+			continueButton.Draw(window);
+			customShowText(427, 230, "Your Score", window, &menuFont, 35, sf::Color(255, 255, 255), sf::Color(96, 57, 19),2);
+			customShowText(540-(19.5*(to_string(scoreIngame).size())), 305, to_string(scoreIngame), window, &menuFont, 68, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
 		}
-		else
-		{
-			timeLeftSec += to_string(timeLeftMin % 60);
-		}
-		window.draw(Life);
-		showText(930, 50, "LEVEL :", window, &font, 32);
-		showText(1030, 50, to_string(currentLevel), window, &font, 32);
-		showText(150, 50, "x", window, &font, 12);
-		showText(930, 130, "SCORE", window, &font, 32);
-		showText(930, 180, to_string(scoreIngame), window, &font, 32);
-		showText(60, 150, "Time Left", window, &font, 32);
-		showText(80, 200, to_string(timeLeftMin / 60), window, &font, 32);
-		showText(100, 200, ":", window, &font, 32);
-		showText(120, 200, timeLeftSec, window, &font, 32);
-		showText(170, 40, to_string(lifeLeft), window, &font, 24);
-		drawBullet(bullet, window);
-		drawEnemy(enemies1, window);
-		drawItem(itemDrop, window);
-		if (effect1On)
-		{
-			drawBombEffect(effect1, window);
-		}
-		else if (effect2On)
-		{
-			drawBombEffect(effect2, window);
-		}
-		else if (effect3On)
-		{
-			drawBombEffect(effect3, window);
-		}
-		player.Draw(window, timeLeftMin);
+
 		window.display();
 	}
 
@@ -409,7 +737,50 @@ int main()
 }
 
 int effectRand = -1;
-void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall)
+void restartAll(Player& player, vector<Enemies>& enemy, vector<Platform>& extraWalls, vector<Item>& item, vector<Bullet>& bullet)
+{
+	clockenemyMove.restart();
+	enemySpawnClock.restart();
+	bulletClock.restart();
+	changeMap = false;
+	deleteExtraWalls = false;
+	createExtraWalls = false;
+	realDelete = false;
+	currentLevel = 1;
+	enemyLeft = 0;
+	timeLeftMin = 150;
+	allDirItemOff = true;
+	shotGunItemOff = true;
+	player.setPlayerSpeed(85.0f);
+	bulletDelayCount = 450;
+	if (enemy.size() != 0)
+	{
+		enemy.erase(enemy.begin(), enemy.end());
+	}
+	if (extraWalls.size() != 0)
+	{
+		extraWalls.erase(extraWalls.begin(), extraWalls.end());
+	}
+	if (item.size() != 0)
+	{
+		item.erase(item.begin(), item.end());
+	}
+	if (bullet.size() != 0)
+	{
+		bullet.erase(bullet.begin(), bullet.end());
+	}
+	lifeLeft = 3;
+	player.setPosition(540.0f, 360.0f);
+	player.dieFrame = -801;
+}
+void drawExtraWalls(vector<Platform>& extraWalls, sf::RenderWindow& window)
+{
+	for (int i = 0; i < extraWalls.size(); i++)
+	{
+		extraWalls[i].Draw(window);
+	}
+}
+void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall, vector<Platform>& extraWalls, float deltaTime)
 {
 	for (Enemies& enemy : enemy)
 	{
@@ -417,6 +788,10 @@ void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall)
 		for (Platform& wall : wall)
 		{
 			wall.GetCollider().CheckCollider(enemy1Collision);
+		}
+		for (Platform& extraWalls : extraWalls)
+		{
+			extraWalls.GetCollider().CheckCollider(enemy1Collision);
 		}
 	}
 	for (int i = 0; i < enemy.size(); i++)
@@ -428,7 +803,15 @@ void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall)
 			{
 				if (i != j)
 				{
-					enemy[j].GetCollider().CheckCollider(enemy1Collision);
+					if (enemy[j].GetCollider().itemColliderCheck(enemy1Collision))
+					{
+						/*	enemy[j].isCollisionEnemy = true;
+							enemy[j].movementUpdateCollision(deltaTime, enemy[i].GetPositionX(), enemy[i].GetPositionY());
+						}
+						else
+						{
+							enemy[j].isCollisionEnemy = false;*/
+					}
 				}
 			}
 		}
@@ -439,13 +822,23 @@ void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall)
 	}
 
 }
-void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item)
+void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min)
 {
 	for (int i = 0; i < enemy.size(); i++)
 	{
 		Collider enemy1Colilision = enemy[i].GetCollider();
-		if (player.GetCollider().itemColliderCheck(enemy1Colilision) && lifeLeft > 0 && enemy[i].isThisAlive())
+		if (player.GetCollider().itemColliderCheck(enemy1Colilision) && enemy[i].isThisAlive())
 		{
+			if (min > 130)	min = 150;
+			else
+			{
+				min += 20;
+				if ((min % 10) != 0)
+				{
+					min += (10 - (min % 10));
+				}
+			}
+			enemySpawnClock.restart();
 			lifeLeft--;
 			enemySpawnDelay = 6000;
 			enemy.erase(enemy.begin(), enemy.end());
@@ -458,73 +851,74 @@ void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Text
 	}
 
 }
-void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture)
+void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture, int hp, int type)
 {
 	int itemDropRate = rand();
 	switch (randSpawn % 12)
 	{
 	case(0):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 337.2, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(1):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.85, 374.458, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(2):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 241.285, 422.5, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(3):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.608, 58, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(4):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 559.379, 58, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(5):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 58, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(6):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 337.5, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(7):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 374.147, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(8):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 842, 422.5, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(9):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 602.5, 663, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(10):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 554.865, 663, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 	case(11):
 	{
-		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663, 1, (itemDropRate * randSpawn)));
+		enemy.push_back(Enemies(Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 40.0f, 517.5, 663, hp, (itemDropRate * randSpawn), type));
 		break;
 	}
 
 	}
+
 	enemyLeft++;
 
 }
@@ -578,9 +972,16 @@ void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float
 					item.push_back(Item(ItemTexture, sf::Vector2u(1, 9), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 8)); //5 Gold Coin
 					break;
 				}
+				if (vect[i].type == 1)
+				{
+					scoreIngame += 50;
+				}
+				if (vect[i].type == 3)
+				{
+					scoreIngame += 70;
+				}
 				vect.erase(vect.begin() + i);
 				enemyLeft--;
-				scoreIngame += 50;
 			}
 		}
 	}
@@ -712,6 +1113,18 @@ void showText(int x, int y, string word, sf::RenderWindow& window, sf::Font* fon
 	sf::Text text;
 	text.setFont(*font);
 	text.setPosition(x, y);
+	text.setString(word);
+	text.setCharacterSize(charSize);
+	window.draw(text);
+}
+void customShowText(float x, float y, string word, sf::RenderWindow& window, sf::Font* font, int charSize, sf::Color textColor, sf::Color outLineColor, int thickness)
+{
+	sf::Text text;
+	text.setFont(*font);
+	text.setPosition(x, y);
+	text.setFillColor(textColor);
+	text.setOutlineColor(outLineColor);
+	text.setOutlineThickness(thickness);
 	text.setString(word);
 	text.setCharacterSize(charSize);
 	window.draw(text);
@@ -857,7 +1270,7 @@ void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window)
 		bullet.Draw(window);
 	}
 }
-void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy)
+void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy, vector<Platform>& extraWalls)
 {
 	for (int i = 0; i < vect.size(); i++)
 	{
@@ -865,6 +1278,13 @@ void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies
 		for (Platform& wall : wall)
 		{
 			if (wall.GetCollider().CheckCollider(bulletCollision))
+			{
+				vect[i].bulletCheck(true);
+			}
+		}
+		for (Platform& extraWalls : extraWalls)
+		{
+			if (extraWalls.GetCollider().CheckCollider(bulletCollision))
 			{
 				vect[i].bulletCheck(true);
 			}

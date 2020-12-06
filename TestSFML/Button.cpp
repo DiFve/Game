@@ -1,12 +1,14 @@
 #include "Button.h"
 
-Button::Button(sf::Vector2f position, int size,sf::Font* font, int nextStateGame, string text)
+Button::Button(sf::Vector2f position, int size,sf::Font* font, int nextStateGame, string text, sf::SoundBuffer& buttonClickBuffer)
 {
 	this->nextState = nextStateGame;
 	body.setCharacterSize(size);
 	body.setPosition(position);
 	body.setFont(*font);
 	body.setString(text);
+	buttonClickSF.setBuffer(buttonClickBuffer);
+	buttonClickSF.setVolume(100);
 }
 
 Button::~Button()
@@ -15,10 +17,12 @@ Button::~Button()
 
 void Button::Update(sf::Vector2i mousePos, int& stateGame, bool& isShowHighScore)
 {
+	
 	if (this->body.getGlobalBounds().contains(sf::Vector2f(mousePos)))
 	{
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && delayClick.getElapsedTime().asMilliseconds() > 500) 
 		{
+			buttonClickSF.play();
 			isClick = true;
 			delayClick.restart();
 			body.setFillColor(sf::Color(133.0f, 87.0f, 35.0f));

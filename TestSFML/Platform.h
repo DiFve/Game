@@ -12,6 +12,7 @@ public:
 	void setOutlineColor(sf::Color color);
 	void setOutlineThickness(int thick);
 	Collider GetCollider() { return Collider(body); }
+	sf::Vector2f Getposition() { return body.getPosition(); }
 	
 
 private:

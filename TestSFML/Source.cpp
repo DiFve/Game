@@ -6,6 +6,7 @@
 #define ENDGAME 789
 #define EXIT -1
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include<string>
 #include<stdio.h>
@@ -28,7 +29,7 @@ using namespace std;
 int stateGame = MENU;
 void showText(int x, int y, string word, sf::RenderWindow& window, sf::Font* font, int charSize);
 void createEnemy(vector<Enemies>& enemy, int randSpawn, sf::Texture* Enemies1Texture, int hp, int type);
-void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item);
+void updateEnemy(vector<Enemies>& enemy, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item, sf::Sound& enemiesDied1SF, sf::Sound& enemiesDied2SF);
 void drawEnemy(vector<Enemies>& enemy, sf::RenderWindow& window);
 void bulletCollider(vector<Bullet>& vect, vector<Platform>& wall, vector<Enemies>& enemy, vector<Platform>& extraWalls);
 void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall, vector<Platform>& extraWalls, float deltaTime);
@@ -37,13 +38,13 @@ void updateBullet(vector<Bullet>& vect, float deltaTime);
 void drawBullet(vector<Bullet>& vect, sf::RenderWindow& window);
 void drawItem(vector<Item>& vect, sf::RenderWindow& window);
 void updateItem(vector<Item>& item, float deltaTime);
-void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf::Texture* bombItemAnimation);
+void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf::Texture* bombItemAnimation, sf::Sound& itemCollectSF, sf::Sound& coffeeCollectSF, sf::Sound& coinCollectSF, sf::Sound& BombSoundEffectSF);
 void createBombEffect1(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
 void createBombEffect2(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
 void createBombEffect3(vector <BombEffect>& effect, sf::Texture* bombItemAnimation);
 void updateBombEffect(vector <BombEffect>& effect, float deltaTime);
 void drawBombEffect(vector <BombEffect>& effect, sf::RenderWindow& window);
-void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min);
+void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min, sf::Sound& diedSF);
 void drawExtraWalls(vector<Platform>& extraWalls, sf::RenderWindow& window);
 void restartAll(Player& player, vector<Enemies>& enemy, vector<Platform>& extraWalls, vector<Item>& item, vector<Bullet>& bullet);
 void customShowText(float x, float y, string word, sf::RenderWindow& window, sf::Font* font, int charSize, sf::Color textColor, sf::Color outLineColor, int thickness);
@@ -107,7 +108,7 @@ int main()
 	sf::Texture endgameTexture;
 	font.loadFromFile("Blockbusted.ttf");
 	menuFont.loadFromFile("Minecrafter.Reg.ttf");
-	
+
 	ItemTexture.loadFromFile("res/img/Item.png");
 	BGTexture.loadFromFile("res/img/BG1.png");
 	menuBG.loadFromFile("res/img/MenuTest.png");
@@ -130,16 +131,16 @@ int main()
 	sf::RectangleShape howtoplay(sf::Vector2f(160.0f, 72.0f));
 	sf::RectangleShape border(sf::Vector2f(280.0f, 355.0f));
 	sf::RectangleShape borderEndgame(sf::Vector2f(400.0f, 300.0f));
-	Decoration endGameBackground(&endgameTexture,sf::Vector2u(2,1),0.5f,sf::Vector2f(640.0f, 640.0f),sf::Vector2f(530.0f, 340.0f));
+	Decoration endGameBackground(&endgameTexture, sf::Vector2u(2, 1), 0.5f, sf::Vector2f(640.0f, 640.0f), sf::Vector2f(530.0f, 340.0f));
 
 	RightSide.loadFromFile("res/img/player.png");
 	Enemies1Texture.loadFromFile("res/img/Enemies1_15px.png");
 	Enemies2Texture.loadFromFile("res/img/Enemies2.png");
 	Enemies3Texture.loadFromFile("res/img/Enemies3.png");
-	moveDec.push_back(DecorationMove(&RightSide, sf::Vector2u(4, 4), 0.3f, 99.7f, sf::Vector2f(230.0f, 300.0f), 1, sf::Vector2f(35.0f, 35.0f)));
-	moveDec.push_back(DecorationMove(&Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(150.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
-	moveDec.push_back(DecorationMove(&Enemies2Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(110.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
 	moveDec.push_back(DecorationMove(&Enemies3Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(70.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
+	moveDec.push_back(DecorationMove(&Enemies2Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(110.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
+	moveDec.push_back(DecorationMove(&Enemies1Texture, sf::Vector2u(2, 1), 0.3f, 100.0f, sf::Vector2f(150.0f, 300.0f), 2, sf::Vector2f(30.0f, 30.0f)));
+	moveDec.push_back(DecorationMove(&RightSide, sf::Vector2u(4, 4), 0.3f, 99.7f, sf::Vector2f(230.0f, 300.0f), 1, sf::Vector2f(35.0f, 35.0f)));
 	BackGround.setOrigin(320.0f, 320.0f);
 	BackGround.setPosition(540.0f, 360.0f);
 	menuBackGround.setOrigin(320.0f, 320.0f);
@@ -168,12 +169,16 @@ int main()
 	menuBackGround.setTexture(&menuBG);
 	BackGround.setTexture(&BGTexture);
 
+	sf::SoundBuffer buttonClickBuffer;
+	buttonClickBuffer.loadFromFile("res/soundEffect/ButtonClickSoundEffect.wav");
+
+
 	vector <Button> button;
-	button.push_back(Button(sf::Vector2f(600.0f, 400.0f), 30, &menuFont, INGAME, "PLAY"));
-	button.push_back(Button(sf::Vector2f(600.0f, 460.0f), 30, &menuFont, HIGHSCORE, "HIGHSCORE"));
-	button.push_back(Button(sf::Vector2f(600.0f, 520.0f), 30, &menuFont, EXIT, "EXIT"));
-	Button closeButton(sf::Vector2f(500.0f, 300.0f), 16, &menuFont, CLOSE_HIGHSCORE, "X");
-	Button continueButton(sf::Vector2f(460.0f, 435.0f), 30, &menuFont, MENU, "Continue");
+	button.push_back(Button(sf::Vector2f(600.0f, 400.0f), 30, &menuFont, INGAME, "PLAY", buttonClickBuffer));
+	button.push_back(Button(sf::Vector2f(600.0f, 460.0f), 30, &menuFont, HIGHSCORE, "HIGHSCORE", buttonClickBuffer));
+	button.push_back(Button(sf::Vector2f(600.0f, 520.0f), 30, &menuFont, EXIT, "EXIT", buttonClickBuffer));
+	Button closeButton(sf::Vector2f(500.0f, 300.0f), 16, &menuFont, CLOSE_HIGHSCORE, "X", buttonClickBuffer);
+	Button continueButton(sf::Vector2f(460.0f, 435.0f), 30, &menuFont, MENU, "Continue", buttonClickBuffer);
 	Player player(&RightSide, sf::Vector2u(4, 4), 0.3f, 85.0f);
 	enemyDieAnimation.loadFromFile("res/img/EnemyDieAnimation.png");
 
@@ -217,6 +222,69 @@ int main()
 	string name[6];
 	continueButton.isClick = true;
 
+	//Sound
+	sf::Music menuMusic;
+	menuMusic.openFromFile("res/soundEffect/MenuSong.wav");
+	menuMusic.setVolume(25);
+	menuMusic.setLoop(true);
+	bool playMenuMusic = false;
+
+	sf::Music inGameMusic;
+	inGameMusic.openFromFile("res/soundEffect/IngameSong.wav");
+	inGameMusic.setVolume(25);
+	inGameMusic.setLoop(true);
+	bool playInGameMusic = false;
+
+	sf::SoundBuffer playerShootBuffer;
+	sf::Sound playerShootSF;
+	playerShootBuffer.loadFromFile("res/soundEffect/Shoot.wav");
+	playerShootSF.setBuffer(playerShootBuffer);
+	playerShootSF.setVolume(100);
+
+	sf::SoundBuffer enemiesDied1Buffer;
+	sf::Sound enemiesDied1SF;
+	enemiesDied1Buffer.loadFromFile("res/soundEffect/EnemiesDied1.wav");
+	enemiesDied1SF.setBuffer(enemiesDied1Buffer);
+	enemiesDied1SF.setVolume(50);
+
+	sf::SoundBuffer enemiesDied2Buffer;
+	sf::Sound enemiesDied2SF;
+	enemiesDied2Buffer.loadFromFile("res/soundEffect/EnemiesDied2.wav");
+	enemiesDied2SF.setBuffer(enemiesDied2Buffer);
+	enemiesDied2SF.setVolume(50);
+
+	sf::SoundBuffer itemCollectBuffer;
+	sf::Sound itemCollectSF;
+	itemCollectBuffer.loadFromFile("res/soundEffect/ItemCollect.wav");
+	itemCollectSF.setBuffer(itemCollectBuffer);
+	itemCollectSF.setVolume(100);
+
+	sf::SoundBuffer coffeeCollectBuffer;
+	sf::Sound coffeeCollectSF;
+	coffeeCollectBuffer.loadFromFile("res/soundEffect/CoffeCollect.wav");
+	coffeeCollectSF.setBuffer(coffeeCollectBuffer);
+	coffeeCollectSF.setVolume(100);
+
+	sf::SoundBuffer coinCollectBuffer;
+	sf::Sound coinCollectSF;
+	coinCollectBuffer.loadFromFile("res/soundEffect/Coincollect.wav");
+	coinCollectSF.setBuffer(coinCollectBuffer);
+	coinCollectSF.setVolume(50);
+
+	sf::SoundBuffer BombSoundEffectBuffer;
+	sf::Sound BombSoundEffectSF;
+	BombSoundEffectBuffer.loadFromFile("res/soundEffect/BombSoundEffect.wav");
+	BombSoundEffectSF.setBuffer(BombSoundEffectBuffer);
+	BombSoundEffectSF.setVolume(50);
+
+	sf::SoundBuffer diedBuffer;
+	sf::Sound diedSF;
+	diedBuffer.loadFromFile("res/soundEffect/Died.wav");
+	diedSF.setBuffer(diedBuffer);
+	diedSF.setVolume(100);
+
+
+
 	while (window.isOpen())
 	{
 		if (deltaTime > 1.0f / 150.0f)
@@ -242,6 +310,13 @@ int main()
 		window.clear();
 		if (stateGame == MENU)
 		{
+			if (!playMenuMusic)
+			{
+				menuMusic.play();
+				playMenuMusic = true;
+				inGameMusic.stop();
+				playInGameMusic = false;
+			}
 			deltaTime = clock.restart().asSeconds();
 			restartAll(player, enemies1, extraWalls, itemDrop, bullet);
 			if (continueButton.isClick)
@@ -273,8 +348,8 @@ int main()
 				//------------HIGHSCORE------------------
 				isShowHighScore = false;
 				moveDec[0].setPosition(sf::Vector2f(230.0f, 300.0f));
-				moveDec[1].setPosition(sf::Vector2f(150.0f, 300.0f));
-				moveDec[2].setPosition(sf::Vector2f(110.0f, 300.0f));
+				moveDec[1].setPosition(sf::Vector2f(190.0f, 300.0f));
+				moveDec[2].setPosition(sf::Vector2f(150.0f, 300.0f));
 				moveDec[3].setPosition(sf::Vector2f(70.0f, 300.0f));
 				for (int i = 0; i < moveDec.size(); i++)
 				{
@@ -284,7 +359,6 @@ int main()
 				continueButton.isClick = false;
 				scoreIngame = 0;
 				nameInGame = "NONAME";
-				cout << "POG" << endl;
 			}
 			for (int i = 0; i < button.size(); i++)
 			{
@@ -321,6 +395,8 @@ int main()
 
 			for (int i = 0; i < moveDec.size(); i++)
 			{
+				if ((i == 0 || i == 1) && !moveDec[i].isCollider)
+					continue;
 				moveDec[i].Draw(window);
 			}
 			for (int i = 0; i < invisWall.size(); i++)
@@ -345,7 +421,7 @@ int main()
 				closeButton.Draw(window);
 			}
 			textbox1.Draw(window);
-			
+			customShowText(525, 657, "63010789 Manhermak Praditpong", window, &menuFont, 16, sf::Color::White, sf::Color::Black, 2);
 			Collider wallcheck = invisWall[3].GetCollider();
 			Collider wallCheckAgain = invisWall[1].GetCollider();
 
@@ -359,6 +435,18 @@ int main()
 		}
 		if (stateGame == INGAME)
 		{
+			if (!playInGameMusic && player.isAlive)
+			{
+				menuMusic.stop();
+				playMenuMusic = false;
+				inGameMusic.play();
+				playInGameMusic = true;
+			}
+			else if (!player.isAlive)
+			{
+				inGameMusic.stop();
+				playInGameMusic = false;
+			}
 			nameInGame = textbox1.getName();
 			if (textbox1.getName() == "")
 			{
@@ -367,17 +455,6 @@ int main()
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 			{
 				stateGame = ENDGAME;
-				/*stateGame = MENU;
-				isShowHighScore = false;
-				moveDec[0].setPosition(sf::Vector2f(230.0f, 300.0f));
-				moveDec[1].setPosition(sf::Vector2f(150.0f, 300.0f));
-				moveDec[2].setPosition(sf::Vector2f(110.0f, 300.0f));
-				moveDec[3].setPosition(sf::Vector2f(70.0f, 300.0f));
-				for (int i = 0; i < moveDec.size(); i++)
-				{
-					moveDec[i].isCollider = false;
-				}
-				textbox1.resetString();*/
 			}
 			int enemyMove = clockenemyMove.getElapsedTime().asMilliseconds();
 			float enemySpawnTime = enemySpawnClock.getElapsedTime().asMilliseconds();
@@ -386,25 +463,56 @@ int main()
 			{
 				stateGame = ENDGAME;
 			}
+			int enemySpawnMap[12];
+			for (int i = 0; i < 12; i++)
+			{
+				enemySpawnMap[i] = 0;
+			}
 			if (enemySpawnTime > enemySpawnDelay && timeLeftMin > 0)
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < currentLevel+2; i++)
 				{
 					int randEnemy = rand();
-					createEnemy(enemies1, randEnemy, &Enemies1Texture, 1, 1);
+					if (currentLevel > 2 && enemyLeft > 30)
+					{
+						createEnemy(enemies1, randEnemy, &Enemies3Texture, 1, 3);
+						enemySpawnMap[randEnemy % 12] = 1;
+					}
+					else if (enemySpawnMap[randEnemy % 12] == 0)
+					{
+						createEnemy(enemies1, randEnemy, &Enemies1Texture, 1, 1);
+						enemySpawnMap[randEnemy % 12] = 1;
+					}
+					
 				}
-				if (currentLevel > 1)
+				for (int i = 0; i < currentLevel - 1; i++)
 				{
 					int randBigEnemy = rand();
 					int randEnemy = rand();
 					switch (randBigEnemy % 5)
 					{
 					case 2:
-						createEnemy(enemies1, randEnemy, &Enemies2Texture, 3, 3);
+						if (enemySpawnMap[randEnemy % 12] == 0)
+						{
+							createEnemy(enemies1, randEnemy, &Enemies2Texture, 3, 2);
+							enemySpawnMap[randEnemy % 12] = 1;
+						}	
 						break;
 					}
 				}
-				enemySpawnDelay = 1800;
+				for (int i = 0; i < currentLevel - 2; i++)
+				{
+					int randBigEnemy = rand();
+					int randEnemy = rand();
+					switch (randBigEnemy % 5)
+					{
+					case 1: case 5:
+						createEnemy(enemies1, randEnemy, &Enemies3Texture, 1, 3);
+						enemySpawnMap[randEnemy % 12] = 1;
+						break;
+					}
+				}
+				enemySpawnDelay = 2500;
 				enemySpawnClock.restart();
 			}
 			if (timeLeftMin <= 0 && enemyLeft == 0)
@@ -418,7 +526,7 @@ int main()
 				enemyLeft = -1;
 				changeMap = false;
 
-				timeLeftMin = 150;
+				timeLeftMin = 160;
 			}
 			if (deleteExtraWalls)
 			{
@@ -480,7 +588,6 @@ int main()
 				{
 					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
 				}
-
 				createExtraWalls = false;
 				enemyLeft = 0;
 			}
@@ -490,34 +597,42 @@ int main()
 			{
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
 				}
 
@@ -527,6 +642,7 @@ int main()
 			{
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
@@ -543,48 +659,56 @@ int main()
 			{
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 5, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 10, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 11, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 4, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 22, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 23, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 7, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 18, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 19, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 6, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 14, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 15, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 2, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 8, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 9, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 1, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 12, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 13, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 0, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 20, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 21, &bulletTexture);
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 				{
+					playerShootSF.play();
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 3, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 16, &bulletTexture);
 					createBullet(bullet, player.Getposition().x, player.Getposition().y, 17, &bulletTexture);
@@ -595,7 +719,7 @@ int main()
 			updateBullet(bullet, deltaTime);
 			player.Update(deltaTime);
 			enemyCollider(enemies1, wall, extraWalls, deltaTime);
-			updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y, &enemyDieAnimation, &ItemTexture, itemDrop);
+			updateEnemy(enemies1, deltaTime, player.Getposition().x, player.Getposition().y, &enemyDieAnimation, &ItemTexture, itemDrop, enemiesDied1SF, enemiesDied2SF);
 			updateItem(itemDrop, deltaTime);
 			updateBombEffect(effect1, deltaTime);
 			updateBombEffect(effect2, deltaTime);
@@ -611,8 +735,8 @@ int main()
 			}
 
 			bulletCollider(bullet, wall, enemies1, extraWalls);
-			itemCollider(itemDrop, player, enemies1, &bombItemAnimation);
-			playerCollisionWithEnemies(enemies1, player, &playerDiedAnimation, bullet, itemDrop, timeLeftMin);
+			itemCollider(itemDrop, player, enemies1, &bombItemAnimation, itemCollectSF, coffeeCollectSF, coinCollectSF, BombSoundEffectSF);
+			playerCollisionWithEnemies(enemies1, player, &playerDiedAnimation, bullet, itemDrop, timeLeftMin, diedSF);
 
 
 			window.draw(BackGround);
@@ -642,9 +766,10 @@ int main()
 			showText(100, 200, ":", window, &font, 32);
 			showText(120, 200, timeLeftSec, window, &font, 32);
 			showText(170, 40, to_string(lifeLeft), window, &font, 24);
+			drawExtraWalls(extraWalls, window);
+			drawItem(itemDrop, window);
 			drawBullet(bullet, window);
 			drawEnemy(enemies1, window);
-			drawItem(itemDrop, window);
 			if (effect1On)
 			{
 				drawBombEffect(effect1, window);
@@ -685,7 +810,6 @@ int main()
 					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
 				}
 			}
-			//Start of Create
 			else if (changeMapDelay.getElapsedTime().asMilliseconds() < 2500)
 			{
 				for (int i = 0; i < extraWalls.size(); i++)
@@ -714,20 +838,21 @@ int main()
 					extraWalls[i].setFillColor(sf::Color(255, 255, 255, 255));
 				}
 			}
-			drawExtraWalls(extraWalls, window);
+			
 			player.Draw(window);
 		}
 		if (stateGame == ENDGAME)
 		{
-			
+			inGameMusic.stop();
+			playInGameMusic = false;
 			deltaTime = clock.restart().asSeconds();
 			endGameBackground.Update(deltaTime);
 			endGameBackground.Draw(window);
 			window.draw(borderEndgame);
 			continueButton.Update(sf::Mouse::getPosition(window), stateGame, isShowHighScore);
 			continueButton.Draw(window);
-			customShowText(427, 230, "Your Score", window, &menuFont, 35, sf::Color(255, 255, 255), sf::Color(96, 57, 19),2);
-			customShowText(540-(19.5*(to_string(scoreIngame).size())), 305, to_string(scoreIngame), window, &menuFont, 68, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
+			customShowText(427, 230, "Your Score", window, &menuFont, 35, sf::Color(255, 255, 255), sf::Color(96, 57, 19), 2);
+			customShowText(540 - (20.0f * (to_string(scoreIngame).size())), 305, to_string(scoreIngame), window, &menuFont, 68, sf::Color(96, 57, 19), sf::Color(255, 255, 255), 2);
 		}
 
 		window.display();
@@ -787,42 +912,17 @@ void enemyCollider(vector<Enemies>& enemy, vector<Platform>& wall, vector<Platfo
 		Collider enemy1Collision = enemy.GetCollider();
 		for (Platform& wall : wall)
 		{
-			wall.GetCollider().CheckCollider(enemy1Collision);
+			if (enemy.type != 3)
+				wall.GetCollider().CheckCollider(enemy1Collision);
 		}
 		for (Platform& extraWalls : extraWalls)
 		{
-			extraWalls.GetCollider().CheckCollider(enemy1Collision);
+			if(enemy.type != 3)
+				extraWalls.GetCollider().CheckCollider(enemy1Collision);
 		}
 	}
-	for (int i = 0; i < enemy.size(); i++)
-	{
-		if (enemy[i].isThisAlive())
-		{
-			Collider enemy1Collision = enemy[i].GetCollider();
-			for (int j = 0; j < enemy.size(); j++)
-			{
-				if (i != j)
-				{
-					if (enemy[j].GetCollider().itemColliderCheck(enemy1Collision))
-					{
-						/*	enemy[j].isCollisionEnemy = true;
-							enemy[j].movementUpdateCollision(deltaTime, enemy[i].GetPositionX(), enemy[i].GetPositionY());
-						}
-						else
-						{
-							enemy[j].isCollisionEnemy = false;*/
-					}
-				}
-			}
-		}
-		else
-		{
-			continue;
-		}
-	}
-
 }
-void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min)
+void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Texture* playerDiedTexture, vector<Bullet>& bullet, vector<Item>& item, int& min, sf::Sound& diedSF)
 {
 	for (int i = 0; i < enemy.size(); i++)
 	{
@@ -846,6 +946,7 @@ void playerCollisionWithEnemies(vector<Enemies>& enemy, Player& player, sf::Text
 			item.erase(item.begin(), item.end());
 			player.dieAnimation(playerDiedTexture, false, sf::Vector2u(5, 1));
 			enemyLeft = 0;
+			diedSF.play();
 			break;
 		}
 	}
@@ -929,8 +1030,17 @@ void updateItem(vector<Item>& item, float deltaTime)
 		item.Update(deltaTime);
 	}
 }
-void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item)
+void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float playerPosY, sf::Texture* dieAnimation, sf::Texture* ItemTexture, vector<Item>& item, sf::Sound& enemiesDied1SF, sf::Sound& enemiesDied2SF)
 {
+	for (int i = 0; i < vect.size(); i++)
+	{
+		for (int j = 0; j < vect.size(); j++)
+		{
+			if (i != j && vect[j].type != 3)
+				vect[j].setSpeed(vect[i].GetPositionX(), vect[i].GetPositionY());
+		}
+	}
+
 	for (int i = 0; i < vect.size(); i++)
 	{
 		vect[i].Update(deltaTime, playerPosX, playerPosY);
@@ -940,6 +1050,15 @@ void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float
 			if (vect[i].dieComplete())
 			{
 				int dieItemRate = rand();
+				switch (dieItemRate % 2)
+				{
+				case 0:
+					enemiesDied1SF.play();
+					break;
+				case 1:
+					enemiesDied2SF.play();
+					break;
+				}
 				int itemDropRate = vect[i].randItemRate() + dieItemRate;
 				itemDropRate %= 300;
 				switch (itemDropRate)
@@ -950,7 +1069,7 @@ void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float
 				case 1:case 14: case 118: case 124:
 					item.push_back(Item(ItemTexture, sf::Vector2u(1, 9), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 1)); //Shoot rapidly
 					break;
-				case 2:case 18: case 132: case 135:
+				case 2:case 18:
 					item.push_back(Item(ItemTexture, sf::Vector2u(1, 9), 0.3f, vect[i].GetPositionX(), vect[i].GetPositionY(), 2)); //Clear all monster
 					break;
 				case 3:case 22: case 125: case 147:
@@ -976,9 +1095,13 @@ void updateEnemy(vector<Enemies>& vect, float deltaTime, float playerPosX, float
 				{
 					scoreIngame += 50;
 				}
-				if (vect[i].type == 3)
+				if (vect[i].type == 2)
 				{
 					scoreIngame += 70;
+				}
+				if (vect[i].type == 3)
+				{
+					scoreIngame += 45;
 				}
 				vect.erase(vect.begin() + i);
 				enemyLeft--;
@@ -993,7 +1116,7 @@ void drawItem(vector<Item>& vect, sf::RenderWindow& window)
 		vect[i].Draw(window);
 	}
 }
-void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf::Texture* bombItemAnimation)
+void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf::Texture* bombItemAnimation, sf::Sound& itemCollectSF, sf::Sound& coffeeCollectSF, sf::Sound& coinCollectSF, sf::Sound& BombSoundEffectSF)
 {
 	if (!player.isAliveReturn())
 	{
@@ -1015,16 +1138,17 @@ void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf
 		Collider playerCollision = player.GetCollider();
 		if (item[i].GetCollider().itemColliderCheck(playerCollision) && player.isAliveReturn())
 		{
-			//cout << item[i].whatRow() << endl;
 			switch (item[i].whatRow())
 			{
 			case 0:			//ยิง8ทิศ
 				allDirItemOff = false;
 				allDirectionsFireClock.restart();
+				itemCollectSF.play();
 				break;
 			case 1:			//ปืนกล
 				bulletDelayCount = 145;
 				rapidFireClock.restart();
+				itemCollectSF.play();
 				break;
 			case 2:			//Clear all	
 				enemy.erase(enemy.begin(), enemy.end());
@@ -1032,17 +1156,21 @@ void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf
 				bombEffectClock.restart();
 				enemySpawnDelay = 2500;
 				effectRand = rand();
+				BombSoundEffectSF.play();
 				break;
 			case 3:			//กาแฟ
 				player.setPlayerSpeed(120.0f);
 				coffeeClock.restart();
+				coffeeCollectSF.play();
 				break;
 			case 4:			//Shotgun
 				shotGunItemOff = false;
 				shotGunFireClock.restart();
+				itemCollectSF.play();
 				break;
 			case 5:			//Life-Up
 				lifeLeft++;
+				coffeeCollectSF.play();
 				break;
 			case 6:		//All in one
 				bulletDelayCount = 145;
@@ -1052,26 +1180,29 @@ void itemCollider(vector<Item>& item, Player& player, vector<Enemies>& enemy, sf
 				shotGunItemOff = false;
 				shotGunFireClock.restart();
 				scoreIngame += 99;
+				coffeeCollectSF.play();
 				break;
 			case 7:
 				scoreIngame += 111;
+				coinCollectSF.play();
 				break;
 			case 8:
 				scoreIngame += 555;
+				coinCollectSF.play();
 				break;
 			}
 			item.erase(item.begin() + i);
 		}
 	}
-	if (coffeeClock.getElapsedTime().asSeconds() > 12)
+	if (coffeeClock.getElapsedTime().asSeconds() > 7)
 	{
 		player.setPlayerSpeed(85.0f);
 	}
-	if (rapidFireClock.getElapsedTime().asSeconds() > 12)
+	if (rapidFireClock.getElapsedTime().asSeconds() > 7)
 	{
 		bulletDelayCount = 450;
 	}
-	if (shotGunFireClock.getElapsedTime().asSeconds() > 12)
+	if (shotGunFireClock.getElapsedTime().asSeconds() > 7)
 	{
 		shotGunItemOff = true;
 	}

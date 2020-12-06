@@ -47,7 +47,7 @@ void Textbox::Draw(sf::RenderWindow& window)
 
 void Textbox::typedOn(sf::Event input)
 {
-	if (isSelectedBool)
+	if (isSelectedBool && !sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 	{
 		int charTyped = input.text.unicode;
 		if (charTyped < 128)

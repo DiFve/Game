@@ -20,11 +20,10 @@ public:
 	bool isThisAlive() { return isAlive; }
 	Collider GetCollider() { return Collider(body); }
 	void setSpeed(float speed);
-	bool isCollisionEnemy = false;
-	bool isCollisionWalls = false;
-	void movementUpdateCollision(float deltaTime, float otherX, float otherY);
+	void movementUpdateCollision(float otherX, float otherY);
 	int type;
 	~Enemies();
+	void setSpeed(float anotherEnemyX, float anotherEnemyY);
 private:
 	
 	sf::RectangleShape body;
@@ -33,7 +32,7 @@ private:
 	unsigned int row;
 	float speed;
 	bool isAlive = true;
-	
+	float deltaTime;
 	int hp,prevhp;
 	int randItem;
 	int dieFrame = 60,shotFrame=60;
